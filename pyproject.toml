@@ -1,16 +1,27 @@
 [project]
 name = "loan-eligibility-prediction"
 version = "0.1.0"
-description = "Predicting loan eligibility using machine learning"
+description = "Predicting loan eligibility using Machine Learning"
 authors = [
     {name = "Maxwell Selassie",email = "maxwellselassie2004@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "lightgbm>=4.6.0",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "pyyaml>=6.0.3",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.16.3",
+    "seaborn>=0.13.2",
+    "shap>=0.49.1",
+    "xgboost>=3.1.1",
 ]
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
