@@ -51,7 +51,7 @@ class EDAPipeline:
         results: Dictionary storing all analysis results
     """
     
-    def __init__(self, config_path: str = "../config/eda_config.yaml"):
+    def __init__(self, config_path: str = "config/eda_config.yaml"):
         """
         Initialize EDA Pipeline.
         
@@ -102,11 +102,11 @@ class EDAPipeline:
         self.logger.info("Creating output directories...")
         
         output_config = self.config.get('output', {})
-        plots_dir = Path(output_config.get('plots_dir', '../plots/'))
+        plots_dir = Path(output_config.get('plots_dir', 'plots/'))
         
         data_config = self.config.get('data', {})
-        artifacts_dir = Path(data_config.get('artifacts_path', '../data/artifacts/'))
-        processed_dir = Path(data_config.get('processed_path', '../data/processed/'))
+        artifacts_dir = Path(data_config.get('artifacts_path', 'artifacts/'))
+        processed_dir = Path(data_config.get('processed_path', 'data/processed/'))
         
         ensure_directory(plots_dir)
         ensure_directory(artifacts_dir)
@@ -141,7 +141,7 @@ class EDAPipeline:
                 )
                 
                 self.df = df
-                self.logger.info(f"Data loaded: {len(df):,} rows × {len(df.columns)} columns")
+                self.logger.info(f"Data loaded: {len(df):,} rows x {len(df.columns)} columns")
                 
                 return df
                 
