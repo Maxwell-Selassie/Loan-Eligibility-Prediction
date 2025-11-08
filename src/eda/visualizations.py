@@ -261,7 +261,6 @@ def plot_target_distribution(
     try:
         fig, ax = plt.subplots(figsize=figsize)
         
-        counts = df[target_column].value_counts()
         colors = ['#2ecc71', '#e74c3c']
         
         ax = sns.countplot(
@@ -272,11 +271,8 @@ def plot_target_distribution(
         )
         
         # Add percentages
-        total = len(df)
-        for i, (label, count) in enumerate(counts.items()):
-            percentage = (count / total) * 100
-            ax.text(i, count, f'{count}\n({percentage:.1f}%)', 
-                ha='center', va='bottom', fontweight='bold')
+        for container in ax.containers:
+            ax.bar_label(container, label_type='edge')
         
         ax.set_title(f'Target Variable Distribution: {target_column}', 
                     fontweight='bold', fontsize=14, pad=20)

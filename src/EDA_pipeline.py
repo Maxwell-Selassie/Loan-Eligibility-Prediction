@@ -577,7 +577,7 @@ def main():
     """Main entry point for EDA pipeline."""
     try:
         # Initialize pipeline
-        pipeline = EDAPipeline(config_path="../config/eda_config.yaml")
+        pipeline = EDAPipeline(config_path="config/EDA_config.yaml")
         
         # Execute
         results = pipeline.execute()

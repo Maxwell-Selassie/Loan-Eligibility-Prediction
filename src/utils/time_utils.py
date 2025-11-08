@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_timestamp(format: str = "%Y-%m-%d %H:%M:%S") -> str:
+def get_timestamp(format: str = "%Y%m%d%H%M%S") -> str:
     """
     Get current timestamp in format: YYYYMMDD_HHMMSS
     
@@ -24,7 +24,7 @@ def get_timestamp(format: str = "%Y-%m-%d %H:%M:%S") -> str:
     return datetime.now().strftime(format)
 
 
-def get_date(format: str = "%Y-%m-%d") -> str:
+def get_date() -> str:
     """
     Get current date in format: YYYYMMDD
     
