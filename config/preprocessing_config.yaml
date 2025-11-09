@@ -1,0 +1,129 @@
+# ==============================
+# PREPROCESSING CONFIGURATION
+# ==============================
+# This file documents all preprocessing decisions based on EDA findings
+# Every decision here is based on EDA analysis
+
+# ==============================
+# PROJECT METADATA
+# ==============================
+# Author : Maxwell Selassie Hiamatsu
+# Date : 28 / 10 / 2025
+# Dataset : LEP. csv (Loan_eligibility_prediction.csv)
+# EDA version : 1.0
+
+# ==============================
+
+project:
+  name: 'Maxwell Selassie Hiamatsu'
+  version: 1.0
+  description: Loan Eligibility Prediction
+
+# file paths
+file_paths:
+  raw_data: 'data/raw/LEP.csv'
+  train_preprocessed_data: 'data/processed/loan_e_p_cleaned_train.csv'
+  test_preprocessed_data: 'data/processed/loan_e_p_cleaned_test.csv'
+  scaler_path: 'models/scalar.pkl'
+  preprocessing_metadata: 'data/artifacts/preprocessing_metadata.json'
+
+# Columns to drop
+columns_to_drop:
+  - column: 'Customer_ID'
+    reason: 'An identifier. Not predictive'
+    eda_evidence: 'CustomerID.png showed a non-predictive pattern'
+
+# handle missing values
+missing_values:
+  enabled: False 
+  reason: 'No missing columns found in dataset'
+# outlier handling
+outliers:
+  method: 'IQR'
+  enabled: False 
+  reason: 'There are a few outliers, but not significant enough to influence model performance'
+
+iqr_multiplier: 1.5
+
+# @encoding - one-hot encoding
+encoding:
+  one_hot:
+    Married:
+      drop_first: True
+      max_categories: 10
+      reason: 'Only 2 unique values. Best option is to one-hot encode'
+      eda_evidence: 'categorical columns showed 2 unique values'
+
+    Education:
+      drop_first: True
+      max_categories: 10
+      reason: "Only 2 unique values ['Graduate', 'Non-Graduate']. No ordinal relationships"
+      eda_evidence: 'categorical columns showed 2 unique values'
+
+    Gender:
+      drop_first: True
+      max_categories: 10
+      reason: 'Only 2 unique values. [Female, Male]'
+      eda_evidence: 'categorical column only showed 2 unique values'
+
+    Self_Employed:
+      drop_first: True
+      max_categories: 10
+      reason: 'Only 2 unique values. No ordinal relationships'
+      eda_evidence: 'categorical columns showed 2 unique values'
+
+    Property_Area:
+      drop_first: True
+      max_categories: 10
+      reason: 'Only 3 unique values. Best option is to one-hot encode'
+      eda_evidence: 'categorical columns only showed 3 unique values'
+
+  label_encode:
+
+    Loan_Status:
+    reason: 'Loan Status is the target variable. Best option is label encoding'
+
+
+# @scaling - standardscaling
+scaling:
+  method: 'standard'
+
+  columns_to_scale:
+  - 'Dependents'
+  - 'Applicant_Income'
+  - 'Coapplicant_Income'
+  - 'Loan_Amount'
+  - 'Loan_Amount_Term'
+
+  reason: "Scaling is required for linear models. Tree models don't require scaling"
+  fit_on: 'train'
+
+# @logging -TimedRotatingFileHandler
+logging:
+  level: "INFO"
+  save_transformations: True
+  log_file: 'data_preprocessing.log'
+
+  track_statistics:
+    - "shape"
+    - "missing_values"
+    - 'memory_usage'
+    - "numeric_distributions"
+
+# @notes and assumptions
+notes:
+  - Missing values are MAR (Missing At Random)
+  - There are no extreme outliers in the dataset overall
+  - There were no duplicates in the dataset
+  - Categorical columns were relatively clean as compared to numeric columns
+  - All categorical columns have unique values less than 10
+  - There are no datetime columns
+
+assumptions:
+  - "There are no significant timelines in the dataset"
+  - "The dataset doesn't contain alot of information about user demographics"
+  - "The dataset doesn't capture how pricing affects customer churn"
+
+future_improvements:
+  - "Add economic factors that affects churn"
+  - "Add information about user demographics and culture"
