@@ -8,8 +8,8 @@
 # PROJECT METADATA
 # ==============================
 # Author : Maxwell Selassie Hiamatsu
-# Date : 28 / 10 / 2025
-# Dataset : LEP. csv (Loan_eligibility_prediction.csv)
+# Date : 08 / 11 / 2025
+# Dataset : LEP.csv (Loan_eligibility_prediction.csv)
 # EDA version : 1.0
 
 # ==============================
@@ -21,11 +21,20 @@ project:
 
 # file paths
 file_paths:
-  raw_data: 'data/raw/LEP.csv'
-  train_preprocessed_data: 'data/processed/loan_e_p_cleaned_train.csv'
-  test_preprocessed_data: 'data/processed/loan_e_p_cleaned_test.csv'
-  scaler_path: 'models/scalar.pkl'
-  preprocessing_metadata: 'data/artifacts/preprocessing_metadata.json'
+  raw_data: '../data/raw/LEP.csv'
+  train_preprocessed_data: '../data/processed/loan_e_p_cleaned_train.csv'
+  test_preprocessed_data: '../data/processed/loan_e_p_cleaned_test.csv'
+  scaler_path: '../models/scaler.pkl'
+  encoder_path: '../models/encoder.pkl'
+  preprocessing_metadata: '../data/artifacts/preprocessing_metadata.json'
+
+# Train/Val/Test split
+data_split:
+  train_size: 0.80
+  test_size: 0.20
+  stratify: True
+  random_state: 42
+  shuffle: True
 
 # Columns to drop
 columns_to_drop:
@@ -37,13 +46,25 @@ columns_to_drop:
 missing_values:
   enabled: False 
   reason: 'No missing columns found in dataset'
+  
+  # Future-proofing: strategies if enabled
+  strategies:
+    numeric:
+      method: 'median'  # mean, median, mode, knn, forward_fill, constant
+      constant_value: 0
+    categorical:
+      method: 'mode'    # mode, constant, forward_fill
+      constant_value: 'Unknown'
+
 # outlier handling
 outliers:
   method: 'IQR'
   enabled: False 
   reason: 'There are a few outliers, but not significant enough to influence model performance'
-
-iqr_multiplier: 1.5
+  iqr_multiplier: 1.5
+  
+  # Future-proofing: strategies if enabled
+  strategy: 'clip'  # clip, remove, transform
 
 # @encoding - one-hot encoding
 encoding:
@@ -79,51 +100,132 @@ encoding:
       eda_evidence: 'categorical columns only showed 3 unique values'
 
   label_encode:
-
     Loan_Status:
-    reason: 'Loan Status is the target variable. Best option is label encoding'
-
+      positive_class: 'Y'  # Y = 1
+      negative_class: 'N'  # N = 0
+      reason: 'Loan Status is the target variable. Best option is label encoding'
 
 # @scaling - standardscaling
 scaling:
-  method: 'standard'
+  enabled: True
+  method: 'standard'  # standard, minmax, robust, maxabs
 
   columns_to_scale:
-  - 'Dependents'
-  - 'Applicant_Income'
-  - 'Coapplicant_Income'
-  - 'Loan_Amount'
-  - 'Loan_Amount_Term'
+    - 'Dependents'
+    - 'Applicant_Income'
+    - 'Coapplicant_Income'
+    - 'Loan_Amount'
+    - 'Loan_Amount_Term'
 
   reason: "Scaling is required for linear models. Tree models don't require scaling"
-  fit_on: 'train'
+  fit_on: 'train'  # Fit on train, transform on train/val/test
 
-# @logging -TimedRotatingFileHandler
+# Data Validation
+validation:
+  enabled: True
+  
+  schema_validation:
+    enabled: True
+    expected_columns:
+      - 'Customer_ID'
+      - 'Gender'
+      - 'Married'
+      - 'Dependents'
+      - 'Education'
+      - 'Self_Employed'
+      - 'Applicant_Income'
+      - 'Coapplicant_Income'
+      - 'Loan_Amount'
+      - 'Loan_Amount_Term'
+      - 'Property_Area'
+      - 'Credit_History'
+      - 'Loan_Status'
+  
+  dtype_validation:
+    enabled: True
+    expected_dtypes:
+      numeric:
+        - 'Customer_ID''
+        - 'Dependents'
+        - 'Applicant_Income'
+        - 'Coapplicant_Income'
+        - 'Loan_Amount'
+        - 'Loan_Amount_Term'
+        - 'Credict_History'
+      categorical:
+        - 'Gender'
+        - 'Married'
+        - 'Education'
+        - 'Self_Employed'
+        - 'Property_Area'
+        - 'Loan_Status'
+  
+  range_validation:
+    enabled: True
+    checks:
+      Dependents:
+        min: 0
+        max: 10
+      Applicant_Income:
+        min: 0
+        max: 1000000
+      Coapplicant_Income:
+        min: 0
+        max: 1000000
+      Loan_Amount:
+        min: 0
+        max: 10000
+      Loan_Amount_Term:
+        min: 0
+        max: 480
+      Credit_History:
+        min: 0
+        max: 1
+  
+  distribution_shift:
+    enabled: True
+    method: 'ks_test'  # ks_test, chi_square, psi
+    threshold: 0.05
+    compare: 'train_vs_test'  # train_vs_val, train_vs_test, val_vs_test
+
+# @logging - TimedRotatingFileHandler
 logging:
-  level: "INFO"
+  log_dir: 'logs/'
+  log_level: 'INFO'
+  log_file: 'preprocessing_pipeline.log'
+  max_bytes: 10485760  # 10MB
+  backup_count: 7
+  
   save_transformations: True
-  log_file: 'data_preprocessing.log'
-
+  
   track_statistics:
-    - "shape"
-    - "missing_values"
+    - 'shape'
+    - 'missing_values'
     - 'memory_usage'
-    - "numeric_distributions"
+    - 'numeric_distributions'
+    - 'categorical_distributions'
+    - 'data_types'
+
+# Output configuration
+output:
+  save_artifacts: True
+  save_plots: False  # Set True if you want preprocessing plots
+  compression: None  # None, 'gzip', 'bz2', 'zip', 'xz'
 
 # @notes and assumptions
 notes:
-  - Missing values are MAR (Missing At Random)
-  - There are no extreme outliers in the dataset overall
+  - No missing values in the dataset
+  - There are no extreme outliers in the dataset overall that can/would influence model performance
   - There were no duplicates in the dataset
   - Categorical columns were relatively clean as compared to numeric columns
-  - All categorical columns have unique values less than 10
+  - All categorical columns have unique values less than 5
   - There are no datetime columns
 
 assumptions:
   - "There are no significant timelines in the dataset"
-  - "The dataset doesn't contain alot of information about user demographics"
-  - "The dataset doesn't capture how pricing affects customer churn"
+  - "The dataset doesn't contain a lot of information about user demographics"
+  - "The dataset doesn't capture alot of external factors that affects a customer's loan eligibility"
 
 future_improvements:
-  - "Add economic factors that affects churn"
+  - "Add economic factors that affects loan eligibility"
   - "Add information about user demographics and culture"
