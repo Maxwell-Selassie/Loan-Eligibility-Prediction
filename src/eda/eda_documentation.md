@@ -1,7 +1,5 @@
 # Production-Grade EDA System - Complete Documentation
 
-
-
 ## Quick Start
 
 ### 1. Setup Configuration
@@ -9,10 +7,10 @@
 Create `config/EDA_config.yaml` (already provided in artifacts above)
 
 ### 2. Run the Pipeline
+
 ```cd src
 python eda_pipeline.py
 ```
-
 
 ### 3. Programmatic Usage
 
@@ -28,52 +26,64 @@ confidence_intervals = results['inferential_stats']['confidence_intervals']
 ttest_results = results['inferential_stats']['ttests']
 ```
 
-##  Pipeline Stages
+## Pipeline Stages
 
 ### Stage 1: Data Loading
+
 - Automatic dtype optimization
 - Categorical encoding
 - Memory usage reporting
 - Error handling and validation
 
 ### Stage 2: Data Quality Checks
+
 **Missing Values**:
+
 - Counts and percentages
 - Severity classification (INFO/WARNING/CRITICAL)
 - Threshold-based alerts
 
 **Duplicates**:
+
 - Full row duplication detection
 - Percentage calculation
 
 **Outliers**:
+
 - IQR method (vectorized for speed)
 - Configurable multiplier
 - Per-column analysis with bounds
 
 ### Stage 3: Descriptive Statistics
+
 **Basic Stats**:
+
 - Row/column counts
 - Memory usage
 - Column types
 
 **Numeric Analysis**:
+
 - Mean, median, std, min, max, range
 - Coefficient of variation
 - Quartile analysis
 
 **Categorical Analysis**:
+
 - Unique value counts
 - Most frequent values
 - Top 5 value distributions
 
 ### Stage 4: Inferential Statistics
+
 **Confidence Intervals**:
+
 - 95% CI by default (configurable)
 - t-distribution based
 - Margin of error reporting
 
 **T-Tests** (Parallel Execution):
+
 - Automatic normality checking (Shapiro-Wilk)
 - Welch's t-test for normal data
 - Mann-Whitney U for non-normal data
@@ -81,18 +91,22 @@ ttest_results = results['inferential_stats']['ttests']
 - Effect interpretation (negligible/small/medium/large)
 
 **Chi-Square Tests**:
+
 - Independence testing for categorical variables
 - Cramér's V effect size
 - Contingency tables
 - Expected frequency validation
 
 **Multi-Group Comparisons**:
+
 - ANOVA for normal data
 - Kruskal-Wallis for non-normal data
 - Group means comparison
 
 ### Stage 5: Visualizations
+
 Generated plots (all saved to `plots/` directory):
+
 1. **numeric_distributions.png** - Histograms with KDE
 2. **boxplots_outliers.png** - Outlier detection
 3. **categorical_distributions.png** - Count plots with labels
@@ -100,15 +114,18 @@ Generated plots (all saved to `plots/` directory):
 5. **target_distribution.png** - Target variable with percentages
 
 ### Stage 6: Artifact Saving
+
 **Artifacts saved**:
+
 - `eda_results_{timestamp}.joblib` - Complete results (compressed)
 - `eda_summary_{timestamp}.txt` - Human-readable summary report
 
-##  Configuration Guide
+## Configuration Guide
 
 ### Key Configuration Sections
 
 #### 1. Data Configuration
+
 ```yaml
 data:
   raw_path: "../data/raw/LEP.csv"
@@ -120,6 +137,7 @@ data:
 ```
 
 #### 2. Statistical Configuration
+
 ```yaml
 statistics:
   confidence_level: 0.95
@@ -130,6 +148,7 @@ statistics:
 ```
 
 #### 3. Performance Configuration
+
 ```yaml
 performance:
   use_multiprocessing: true
@@ -139,6 +158,7 @@ performance:
 ```
 
 #### 4. Visualization Configuration
+
 ```yaml
 visualization:
   style: "seaborn-v0_8-darkgrid"
@@ -148,7 +168,7 @@ visualization:
   show_plots: false  # Set false for production
 ```
 
-##  Security Features
+## Security Features
 
 1. **Input Validation**:
    - File existence checks
@@ -170,7 +190,7 @@ visualization:
    - Graceful degradation
    - Detailed error logging
 
-##  Performance Optimizations
+## Performance Optimizations
 
 1. **Memory Optimization**:
    - Automatic dtype downcasting
@@ -197,9 +217,10 @@ visualization:
    - Normality test results stored
    - Reusable intermediate results
 
-##  Output Interpretation
+## Output Interpretation
 
 ### T-Test Results
+
 ```python
 {
   'test_type': 'Welch\'s t-test',
@@ -213,11 +234,13 @@ visualization:
 ```
 
 **Interpretation**:
+
 - **p_value < 0.05**: Difference is statistically significant
 - **cohens_d = 2.104**: Very large practical effect
 - **Conclusion**: Feature strongly discriminates between classes
 
 ### Chi-Square Results
+
 ```python
 {
   'chi2': 12.45,
@@ -229,11 +252,13 @@ visualization:
 ```
 
 **Interpretation**:
+
 - **p_value < 0.05**: Significant association
 - **cramers_v = 0.28**: Small-to-medium effect size
 - **Conclusion**: Feature is associated but not strongly
 
 ### Confidence Intervals
+
 ```python
 {
   'mean': 50000.00,
@@ -244,13 +269,15 @@ visualization:
 ```
 
 **Interpretation**:
+
 - We're 95% confident the true population mean is between $48,500 and $51,500
 - Narrower CI = more precise estimate
 - Larger sample size → narrower CI
 
-##  Troubleshooting
+## Troubleshooting
 
 ### Issue 1: Import Errors
+
 ```bash
 # Solution: Ensure you're in the src/ directory
 cd src
@@ -258,6 +285,7 @@ python eda_pipeline.py
 ```
 
 ### Issue 2: Config File Not Found
+
 ```bash
 # Solution: Check relative paths
 # The pipeline expects config at: ../config/eda_config.yaml
@@ -265,6 +293,7 @@ python eda_pipeline.py
 ```
 
 ### Issue 3: Memory Issues
+
 ```yaml
 # Solution: Adjust in config
 performance:
@@ -273,21 +302,24 @@ performance:
 ```
 
 ### Issue 4: Missing Dependencies
+
 ```bash
 # Install required packages
 pip install pandas numpy scipy matplotlib seaborn joblib pyyaml
 ```
 
 ### Issue 5: Permission Denied
+
 ```bash
 # Solution: Create directories with write permissions
 mkdir -p ../logs ../plots ../data/artifacts
 chmod 755 ../logs ../plots ../data/artifacts
 ```
 
-##  Logging
+## Logging
 
 ### Log Levels
+
 - **DEBUG**: Detailed diagnostic information
 - **INFO**: General informational messages (default)
 - **WARNING**: Warning messages (potential issues)
@@ -295,22 +327,25 @@ chmod 755 ../logs ../plots ../data/artifacts
 - **CRITICAL**: Critical errors (system failures)
 
 ### Log Files
+
 - **Location**: `../logs/eda_pipeline.log`
 - **Rotation**: Daily at midnight
 - **Retention**: 7 days of backups
 - **Format**: `YYYY-MM-DD HH:MM:SS - NAME - LEVEL - FUNCTION:LINE - MESSAGE`
 
 ### Example Log Output
-```
+
+``` logs
 2025-01-08 14:30:25 - eda_pipeline - INFO - execute:450 - Complete EDA Pipeline started...
 2025-01-08 14:30:26 - eda_pipeline - INFO - load_data:180 - Data loaded: 614 rows × 13 columns
 2025-01-08 14:30:27 - eda_pipeline - INFO - check_missing_values:45 - Missing values found in 3 columns
 2025-01-08 14:30:28 - eda_pipeline - INFO - run_ttest_parallel:285 - Completed: 5/6 columns show significant differences
 ```
 
-##  Customization Examples
+## Customization Examples
 
 ### Example 1: Change Confidence Level to 99%
+
 ```yaml
 statistics:
   confidence_level: 0.99
@@ -318,6 +353,7 @@ statistics:
 ```
 
 ### Example 2: Add Custom Categorical Columns
+
 ```yaml
 data:
   categorical_columns:
@@ -331,6 +367,7 @@ data:
 ```
 
 ### Example 3: Disable Parallel Processing
+
 ```yaml
 performance:
   parallel_statistical_tests: false
@@ -338,15 +375,17 @@ performance:
 ```
 
 ### Example 4: Change Plot Style
+
 ```yaml
 visualization:
   style: "seaborn-v0_8-whitegrid"  # or "ggplot", "bmh", "default"
   context: "talk"  # or "paper", "poster"
 ```
 
-##  Performance Benchmarks
+## Performance Benchmarks
 
 **Typical execution times** (614 rows × 13 columns):
+
 - Data loading: ~0.5s
 - Data quality checks: ~0.8s
 - Descriptive stats: ~0.3s
@@ -355,65 +394,80 @@ visualization:
 - Total: ~8-10 seconds
 
 **Memory usage**:
+
 - Peak memory: ~150-300 MB (depending on dataset size)
 - Optimized dtypes save ~40% memory
 
 **Scalability**:
+
 - Tested up to 1M rows without issues
 - Parallel processing scales linearly with cores
 - Bottleneck: Normality tests for very large datasets (mitigated by sampling)
 
-##  Best Practices
+## Best Practices
 
 ### 1. Data Preparation
+
 ✅ **DO**:
+
 - Ensure consistent column naming
 - Remove obvious data errors before EDA
 - Document any preprocessing steps
 
 ❌ **DON'T**:
+
 - Mix data types in the same column
 - Have spaces in column names
 - Include derived features in raw data
 
 ### 2. Configuration Management
+
 ✅ **DO**:
+
 - Version control your config files
 - Document config changes
 - Use descriptive config file names
 
 ❌ **DON'T**:
+
 - Hardcode paths in code
 - Use absolute paths
 - Store sensitive data in config
 
 ### 3. Performance Tuning
+
 ✅ **DO**:
+
 - Use parallel processing for large datasets
 - Enable dtype optimization
 - Sample large datasets for normality tests
 
 ❌ **DON'T**:
+
 - Run with show_plots=true in production
 - Disable logging (you'll need it for debugging)
 - Skip data quality checks
 
 ### 4. Result Interpretation
+
 ✅ **DO**:
+
 - Always check effect sizes, not just p-values
 - Correct for multiple testing
 - Document significant findings
 
 ❌ **DON'T**:
+
 - Rely solely on statistical significance
 - Ignore practical significance
 - Cherry-pick significant results
 
-##  Integration with ML Pipeline
+## Integration with ML Pipeline
 
 After EDA, use results to inform:
 
 1. **Feature Selection**:
+
    ```python
    # Load EDA results
    results = load_joblib("eda_results_20250108143025.joblib")
@@ -436,31 +490,32 @@ After EDA, use results to inform:
    - Consider effect sizes for feature importance
    - Validate assumptions from EDA
 
-##  References
+## References
 
 **Statistical Methods**:
+
 - T-test: Welch (1947). "The generalization of 'Student's' problem"
 - Mann-Whitney U: Mann & Whitney (1947). "On a test of whether one of two random variables is stochastically larger"
 - Chi-square: Pearson (1900). "On the criterion that a given system of deviations"
 - Effect sizes: Cohen (1988). "Statistical Power Analysis for the Behavioral Sciences"
 
 **Python Libraries**:
-- Pandas: https://pandas.pydata.org/
+
+- Pandas: 'https://pandas.pydata.org/'
 - NumPy: https://numpy.org/
 - SciPy: https://scipy.org/
 - Matplotlib: https://matplotlib.org/
 - Seaborn: https://seaborn.pydata.org/
 
-##  License & Support
+## License & Support
 
 This is production-ready code designed for the Loan Eligibility Prediction project.
 
 **For questions or issues**:
+
 1. Check logs in `logs/eda_pipeline.log`
 2. Review configuration settings
 3. Verify data format matches expected schema
 4. Check that all required directories exist
-
----
 
 **END OF DOCUMENTATION**
