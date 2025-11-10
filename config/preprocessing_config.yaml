@@ -21,12 +21,12 @@ project:
 
 # file paths
 file_paths:
-  raw_data: '../data/raw/LEP.csv'
-  train_preprocessed_data: '../data/processed/loan_e_p_cleaned_train.csv'
-  test_preprocessed_data: '../data/processed/loan_e_p_cleaned_test.csv'
-  scaler_path: '../models/scaler.pkl'
-  encoder_path: '../models/encoder.pkl'
-  preprocessing_metadata: '../data/artifacts/preprocessing_metadata.json'
+  raw_data: 'data/raw/LEP.csv'
+  train_preprocessed_data: 'data/processed/loan_e_p_cleaned_train.csv'
+  test_preprocessed_data: 'data/processed/loan_e_p_cleaned_test.csv'
+  scaler_path: 'models/scaler.pkl'
+  encoder_path: 'models/encoder.pkl'
+  preprocessing_metadata: 'data/artifacts/preprocessing_metadata.json'
 
 # Train/Val/Test split
 data_split:
@@ -145,7 +145,7 @@ validation:
     enabled: True
     expected_dtypes:
       numeric:
-        - 'Customer_ID''
+        - 'Customer_ID'
         - 'Dependents'
         - 'Applicant_Income'
         - 'Coapplicant_Income'
