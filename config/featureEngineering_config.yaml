@@ -1,0 +1,138 @@
+# ==============================
+# FEATURE ENGINEERING CONFIGURATION
+# ==============================
+# This config is integrated into preprocessing_config.yaml
+
+feature_engineering:
+  enabled: True
+  
+  # Log Transformations
+  log_transforms:
+    Applicant_Income:
+      method: 'log1p'  # log1p, log, log10
+      keep_original: True
+      suffix: '_log'
+      reason: 'Right-skewed distribution, reduce impact of outliers'
+      eda_evidence: 'EDA showed positive skew, log transform normalizes'
+    
+    Coapplicant_Income:
+      method: 'log1p'
+      keep_original: True
+      suffix: '_log'
+      reason: 'Right-skewed distribution, many zeros present'
+      eda_evidence: 'EDA showed positive skew with zero values'
+  
+  # Interaction Features
+  interaction_features:
+    Total_Income:
+      formula: 'Applicant_Income + Coapplicant_Income'
+      keep_original: True
+      reason: 'Combined household income - key indicator of repayment ability'
+      eda_evidence: 'Both incomes significant in t-tests'
+    
+    Income_Ratio:
+      formula: 'Applicant_Income / (Coapplicant_Income + 1)'
+      keep_original: True
+      reason: 'Applicant income dependency on coapplicant'
+      eda_evidence: 'Ratio captures income structure'
+    
+    Loan_to_Income:
+      formula: 'Loan_Amount / (Applicant_Income + Coapplicant_Income + 1)'
+      keep_original: True
+      reason: 'Loan burden relative to income'
+      eda_evidence: 'Critical for loan approval decision'
+    
+    Income_per_Dependent:
+      formula: '(Applicant_Income + Coapplicant_Income) / (Dependents + 1)'
+      keep_original: True
+      reason: 'Available income per family member'
+      eda_evidence: 'Dependents affect disposable income'
+  
+  # Polynomial Features
+  polynomial_features:
+    enabled: True
+    degree: 2
+    interaction_only: False  # If True, only interactions, no x^2
+    include_bias: False
+    keep_original: True
+    
+    columns:
+      - 'Applicant_Income'
+      - 'Coapplicant_Income'
+      - 'Loan_Amount'
+    
+    reason: 'Capture non-linear relationships between income and loan amount'
+    eda_evidence: 'Scatter plots showed non-linear patterns'
+  
+  # Domain-Specific Features
+  domain_features:
+    EMI:
+      formula: 'Loan_Amount / Loan_Amount_Term'
+      keep_original: True
+      reason: 'Monthly payment amount (Equated Monthly Installment)'
+      eda_evidence: 'Key metric for loan affordability'
+    
+    Loan_Income_Ratio:
+      formula: 'Loan_Amount / (Applicant_Income + Coapplicant_Income + 1)'
+      keep_original: True
+      reason: 'Debt-to-income ratio'
+      eda_evidence: 'Standard lending metric'
+    
+    EMI_to_Income:
+      formula: '(Loan_Amount / Loan_Amount_Term) / ((Applicant_Income / 12) + (Coapplicant_Income / 12) + 1)'
+      keep_original: True
+      reason: 'Monthly EMI as percentage of monthly income'
+      eda_evidence: 'Lenders use this for approval decisions'
+    
+    Has_Coapplicant:
+      formula: 'Coapplicant_Income > 0'
+      keep_original: True
+      dtype: 'int'
+      reason: 'Binary indicator of coapplicant presence'
+      eda_evidence: 'Presence of coapplicant may affect approval'
+    
+    Total_Experience:
+      formula: 'Applicant_Income / 1000'  # Rough proxy if no experience column
+      keep_original: True
+      reason: 'Income as proxy for work experience/seniority'
+      eda_evidence: 'Higher income correlates with experience'
+    
+    Loan_Term_Years:
+      formula: 'Loan_Amount_Term / 12'
+      keep_original: True
+      reason: 'Loan term in years (more interpretable)'
+      eda_evidence: 'Easier to interpret than months'
+  
+  # Validation
+  validation:
+    enabled: True
+    check_inf: True
+    check_nan: True
+    check_negative_after_log: True
+    check_division_by_zero: True
+    
+    # Distribution checks
+    check_skewness: True
+    skewness_threshold: 1.0  # Log warning if |skewness| > threshold
+  
+  # Feature Selection (optional - can disable weak features)
+  feature_selection:
+    enabled: False  # Set True to enable automatic feature selection
+    method: 'variance_threshold'  # variance_threshold, correlation, mutual_info
+    variance_threshold: 0.01  # Remove features with variance < threshold
+    correlation_threshold: 0.95  # Remove features with correlation > threshold
+
+# Notes
+notes:
+  - 'Feature engineering happens AFTER split, BEFORE encoding/scaling'
+  - 'Log transforms applied to raw values (not scaled)'
+  - 'Interaction features created from original columns'
+  - 'Polynomial features increase dimensionality significantly'
+  - 'Domain features based on lending industry standards'
+  - 'Keep_original=True to let model learn from both raw and engineered features'
+
+assumptions:
+  - 'Income values are always >= 0'
+  - 'Loan_Amount_Term > 0 (no division by zero)'
+  - 'Log transforms assume right-skewed distributions'
+  - 'EMI calculation assumes simple monthly payment'

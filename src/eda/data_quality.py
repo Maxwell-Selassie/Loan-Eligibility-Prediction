@@ -156,6 +156,7 @@ def detect_outliers_iqr(
             }
             
             logger.info(f"{col}: {n_outliers} outliers ({outlier_pct:.2f}%) | Range: [{lower_bound:.2f}, {upper_bound:.2f}]")
+            logger.info(f'Total Number of outliers in the dataset : {outlier_mask.sum().sum()}')
         
         return outlier_summary
     else:

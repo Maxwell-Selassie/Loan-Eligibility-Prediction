@@ -83,7 +83,7 @@ class EDAPipeline:
     def _setup_logging(self) -> Any:
         """Setup logging system."""
         log_config = self.config.get('logging', {})
-        log_dir = Path(log_config.get('log_dir', '../logs/'))
+        log_dir = Path(log_config.get('log_dir', 'logs/'))
         
         ensure_directory(log_dir)
         

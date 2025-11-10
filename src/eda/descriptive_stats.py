@@ -64,8 +64,6 @@ def analyze_numeric_columns(
     
     # Compute statistics (vectorized)
     summary = df[numeric_cols].describe().T
-    summary['min'] = df[numeric_cols].min()
-    summary['max'] = df[numeric_cols].max()
     summary['range'] = summary['max'] - summary['min']
     summary['cv'] = (summary['std'] / summary['mean']).round(4)  # Coefficient of variation
     
