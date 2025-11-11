@@ -71,8 +71,6 @@ class DataSplitter:
         if target_col not in df.columns:
             raise ValueError(f"Target column '{target_col}' not found in DataFrame")
         
-        # First split: train vs test
-        train_val_size = train_size
         
         stratify_col = df[target_col] if stratify else None
         

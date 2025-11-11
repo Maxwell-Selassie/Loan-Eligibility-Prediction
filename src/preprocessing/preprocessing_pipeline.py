@@ -23,6 +23,8 @@ from preprocessing import (
     DataEncoder, DataScaler, DataSplitter
 )
 
+from feature_engineering.feature_engineering_pipeline import FeatureEngineeringPipeline
+
 
 class PreprocessingError(Exception):
     """Custom exception for preprocessing errors."""
@@ -59,6 +61,7 @@ class PreprocessingPipeline:
         self.loader: Optional[DataLoader] = None
         self.validator: Optional[DataValidator] = None
         self.dropper: Optional[FeatureDropper] = None
+        self.feature_engineer: Optional[FeatureEngineeringPipeline] = None
         self.encoder: Optional[DataEncoder] = None
         self.scaler: Optional[DataScaler] = None
         self.splitter: Optional[DataSplitter] = None
@@ -197,7 +200,7 @@ class PreprocessingPipeline:
                 self.logger.error(f"Feature dropping failed: {e}", exc_info=True)
                 raise PreprocessingError(f"Feature dropping failed: {e}")
     
-    def split_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def split_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Split data into train/val/test sets.
         
@@ -234,6 +237,44 @@ class PreprocessingPipeline:
             except Exception as e:
                 self.logger.error(f"Data splitting failed: {e}", exc_info=True)
                 raise PreprocessingError(f"Data splitting failed: {e}")
+            
+            
+    def engineer_features(
+        self,
+        df_train: pd.DataFrame,
+        df_test: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        
+        Args:
+            df_train: Training DataFrame
+            df_test: Test DataFrame
+            
+        Returns:
+            Tuple of DataFrames with engineered features
+        """
+        with Timer("Feature engineering", self.logger):
+
+            feature_engineering_config = self._load_config('config/featureEngineering_config.yaml')
+            try:
+                self.feature_engineer = FeatureEngineeringPipeline(feature_engineering_config)
+                
+                # Fit on train, transform all
+                df_train_eng = self.feature_engineer.fit_transform(df_train)
+                df_test_eng = self.feature_engineer.transform(df_test)
+                
+                # Store metadata
+                self.metadata['feature_engineering'] = {
+                    'enabled': self.config.get('feature_engineering', {}).get('enabled', True),
+                    'engineered_features': self.feature_engineer.get_feature_names(),
+                    'n_engineered_features': len(self.feature_engineer.get_feature_names())
+                }
+                
+                return df_train_eng, df_test_eng
+                
+            except Exception as e:
+                self.logger.error(f"Feature engineering failed: {e}", exc_info=True)
+                raise PreprocessingError(f"Feature engineering failed: {e}")
     
     def encode_features(
         self,
@@ -451,23 +492,26 @@ class PreprocessingPipeline:
                 
                 # Stage 4: Split data (before encoding/scaling)
                 df_train, df_test = self.split_data(df)
+
+                # Stage 5: Engineer features before encoding
+                df_train, df_test = self.engineer_features(df_train, df_test)
                 
-                # Stage 5: Encode features (fit on train)
+                # Stage 6: Encode features (fit on train)
                 df_train, df_test = self.encode_features(df_train, df_test)
                 
-                # Stage 6: Scale features (fit on train)
+                # Stage 7: Scale features (fit on train)
                 df_train, df_test = self.scale_features(df_train, df_test)
                 
-                # Stage 7: Check distribution shift
+                # Stage 8: Check distribution shift
                 self.check_distribution_shift(df_train, df_test)
                 
-                # Stage 8: Save processed data
+                # Stage 9: Save processed data
                 self.df_train = df_train
                 self.df_test = df_test
                 
                 self.save_processed_data(df_train, df_test)
                 
-                # Stage 9: Save metadata
+                # Stage 10: Save metadata
                 self.save_metadata()
                 
                 self.logger.info("="*80)
