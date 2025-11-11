@@ -81,6 +81,9 @@ class DomainFeatureCreator:
                     'max': max,
                     'min': min
                 }
+            
+                        # Add DataFrame columns to the safe namespace
+                safe_dict.update({col: df_transformed[col] for col in df_transformed.columns})
                 
                 # Evaluate formula
                 df_transformed[feature_name] = eval(formula, {"__builtins__": {}}, safe_dict)
