@@ -1,6 +1,5 @@
-
 """
-Main Model Training Pipeline with MLflow Integration
+Main Model Training Pipeline with MLflow Integration (Train/Test Only)
 Production-grade ML training with experiment tracking.
 """
 
@@ -24,20 +23,18 @@ from sklearn.calibration import calibration_curve
 import time
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
-
+from utils import (
+    read_yaml, ensure_directory, get_timestamp,
+    Timer, setup_logger
+)
 from model_training import (
     TrainingDataLoader,
     ModelTrainer,
     HyperparameterTuner,
     ModelEvaluator,
     FeatureImportanceAnalyzer
-)
-
-from utils import (
-    read_yaml, ensure_directory, get_timestamp,
-    Timer, setup_logger
 )
 
 import logging
@@ -51,19 +48,19 @@ class ModelTrainingError(Exception):
 
 class ModelTrainingPipeline:
     """
-    Complete model training pipeline with MLflow tracking.
+    Complete model training pipeline with MLflow tracking (Train/Test split).
     
     Pipeline Stages:
-    1. Data loading
+    1. Data loading (train/test)
     2. MLflow experiment setup
-    3. Baseline model training
+    3. Baseline model training (evaluated on test set)
     4. Model evaluation & selection
-    5. Hyperparameter tuning (top 3 models)
-    6. Final evaluation
+    5. Hyperparameter tuning (top 3 models, using CV on train set)
+    6. Final evaluation on test set
     7. Model registration
     """
     
-    def __init__(self, config_path: str = "../config/model_training_config.yaml"):
+    def __init__(self, config_path: str = "config/model_training_config.yaml"):
         """
         Initialize Model Training Pipeline.
         
@@ -103,6 +100,7 @@ class ModelTrainingPipeline:
         self.logger.info("="*80)
         self.logger.info(f"Author: {self.config['project']['name']}")
         self.logger.info(f"Version: {self.config['project']['version']}")
+        self.logger.info(f"Note: Using Train/Test split (no validation set)")
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -190,6 +188,7 @@ class ModelTrainingPipeline:
     def train_baseline_models(self) -> List[Dict[str, Any]]:
         """
         Train all baseline models (no hyperparameter tuning).
+        Evaluate on test set since we don't have a validation set.
         
         Returns:
             List of baseline results
@@ -211,6 +210,7 @@ class ModelTrainingPipeline:
                 models_to_train.append((model_name, model_config))
         
         self.logger.info(f"Training {len(models_to_train)} baseline models: {[m[0] for m in models_to_train]}")
+        self.logger.info("Note: Models evaluated on test set (no separate validation set)")
         
         baseline_results = []
         
@@ -230,17 +230,18 @@ class ModelTrainingPipeline:
                 if self.config.get('error_handling', {}).get('on_model_failure') == 'stop':
                     raise ModelTrainingError(f"Model training failed: {e}")
         
-        # Rank models
+        # Rank models by test performance
         baseline_results.sort(key=lambda x: x['test_metrics'][self.config['metrics']['primary_metric']], reverse=True)
         
         self.logger.info("\n" + "="*80)
-        self.logger.info("BASELINE RESULTS SUMMARY")
+        self.logger.info("BASELINE RESULTS SUMMARY (Ranked by Test Performance)")
         self.logger.info("="*80)
         
         primary_metric = self.config['metrics']['primary_metric']
         for i, result in enumerate(baseline_results, 1):
             score = result['test_metrics'][primary_metric]
-            self.logger.info(f"{i}. {result['model_name']}: {primary_metric}={score:.4f}")
+            cv_mean = result['cv_results'].get('cv_mean', 0)
+            self.logger.info(f"{i}. {result['model_name']}: test_{primary_metric}={score:.4f}, cv_{primary_metric}={cv_mean:.4f}")
         
         self.baseline_results = baseline_results
         
@@ -288,7 +289,7 @@ class ModelTrainingPipeline:
             # Log training time
             mlflow.log_metric("training_time", self.trainer.training_time)
             
-            # Cross-validation
+            # Cross-validation (on train set only)
             cv_results = self.trainer.cross_validate(
                 self.X_train, self.y_train,
                 scoring=self.config['metrics']['primary_metric']
@@ -298,7 +299,7 @@ class ModelTrainingPipeline:
                 if key != 'cv_scores':
                     mlflow.log_metric(f"cv_{key}", value)
             
-            # Evaluate on train, test
+            # Evaluate on train and test
             self.evaluator = ModelEvaluator(self.config)
             
             train_metrics = self.evaluator.evaluate(model, self.X_train, self.y_train, 'train')
@@ -311,16 +312,12 @@ class ModelTrainingPipeline:
             
             for metric_name, value in test_metrics.items():
                 if isinstance(value, (int, float)):
-                    mlflow.log_metric(f"val_{metric_name}", value)
-            
-            for metric_name, value in test_metrics.items():
-                if isinstance(value, (int, float)):
                     mlflow.log_metric(f"test_{metric_name}", value)
             
-            # Generalization analysis
+            # Generalization analysis (train vs test)
             gen_analysis = self.evaluator.compare_train_val(train_metrics, test_metrics)
-            mlflow.log_metric("train_val_gap", gen_analysis['gap'])
-            mlflow.log_metric("train_val_gap_pct", gen_analysis['gap_percentage'])
+            mlflow.log_metric("train_test_gap", gen_analysis['gap'])
+            mlflow.log_metric("train_test_gap_pct", gen_analysis['gap_percentage'])
             
             # Feature importance (for applicable models)
             feature_importance_results = {}
@@ -359,7 +356,7 @@ class ModelTrainingPipeline:
         self,
         model,
         model_name: str,
-        val_metrics: Dict[str, Any],
+        test_metrics: Dict[str, Any],
         feature_importance: Dict[str, Any]
     ) -> None:
         """
@@ -368,7 +365,7 @@ class ModelTrainingPipeline:
         Args:
             model: Trained model
             model_name: Name of the model
-            val_metrics: Validation metrics
+            test_metrics: Test metrics
             feature_importance: Feature importance results
         """
         plots_dir = Path(self.config['plotting']['plots_dir'])
@@ -376,7 +373,7 @@ class ModelTrainingPipeline:
         # Confusion Matrix
         try:
             fig, ax = plt.subplots(figsize=(8, 6))
-            cm = val_metrics.get('confusion_matrix')
+            cm = test_metrics.get('confusion_matrix')
             if cm is not None:
                 sns.heatmap(cm, annot=True, fmt='.2f', cmap='Blues', ax=ax)
                 ax.set_title(f'Confusion Matrix - {model_name}')
@@ -442,6 +439,7 @@ class ModelTrainingPipeline:
     def tune_top_models(self) -> List[Dict[str, Any]]:
         """
         Tune hyperparameters for top N models.
+        Uses cross-validation on train set only.
         
         Returns:
             List of tuned model results
@@ -453,6 +451,7 @@ class ModelTrainingPipeline:
         self.logger.info("\n" + "="*80)
         self.logger.info("PHASE 2: HYPERPARAMETER TUNING")
         self.logger.info("="*80)
+        self.logger.info("Note: Tuning uses CV on train set, final evaluation on test set")
         
         tune_top_n = self.config['hyperparameter_tuning'].get('tune_top_n_models', 3)
         top_models = self.baseline_results[:tune_top_n]
@@ -472,7 +471,7 @@ class ModelTrainingPipeline:
                 # Initialize tuner
                 self.tuner = HyperparameterTuner(self.config)
                 
-                # Tune
+                # Tune (uses CV on train set)
                 tuning_results = self.tuner.tune(
                     model_name,
                     self.X_train,
@@ -480,7 +479,7 @@ class ModelTrainingPipeline:
                     scoring=self.config['metrics']['primary_metric']
                 )
                 
-                # Train model with best params
+                # Train model with best params and evaluate on test
                 best_params = tuning_results['best_params']
                 
                 result = self._train_single_model(
@@ -498,17 +497,18 @@ class ModelTrainingPipeline:
                 if self.config.get('error_handling', {}).get('on_model_failure') == 'stop':
                     raise ModelTrainingError(f"Hyperparameter tuning failed: {e}")
         
-        # Rank tuned models
+        # Rank tuned models by test performance
         tuned_results.sort(key=lambda x: x['test_metrics'][self.config['metrics']['primary_metric']], reverse=True)
         
         self.logger.info("\n" + "="*80)
-        self.logger.info("TUNED RESULTS SUMMARY")
+        self.logger.info("TUNED RESULTS SUMMARY (Ranked by Test Performance)")
         self.logger.info("="*80)
         
         primary_metric = self.config['metrics']['primary_metric']
         for i, result in enumerate(tuned_results, 1):
             score = result['test_metrics'][primary_metric]
-            self.logger.info(f"{i}. {result['model_name']}: {primary_metric}={score:.4f}")
+            cv_mean = result['cv_results'].get('cv_mean', 0)
+            self.logger.info(f"{i}. {result['model_name']}: test_{primary_metric}={score:.4f}, cv_{primary_metric}={cv_mean:.4f}")
         
         self.tuned_results = tuned_results
         
@@ -516,7 +516,7 @@ class ModelTrainingPipeline:
     
     def select_best_model(self) -> Dict[str, Any]:
         """
-        Select best model based on validation performance.
+        Select best model based on test performance.
         
         Returns:
             Best model result dictionary
@@ -528,7 +528,7 @@ class ModelTrainingPipeline:
         # Combine baseline and tuned results
         all_results = self.baseline_results + self.tuned_results
         
-        # Sort by primary metric
+        # Sort by test performance (primary metric)
         primary_metric = self.config['metrics']['primary_metric']
         all_results.sort(key=lambda x: x['test_metrics'][primary_metric], reverse=True)
         
@@ -540,21 +540,26 @@ class ModelTrainingPipeline:
         self.best_model_score = best_result['test_metrics'][primary_metric]
         
         self.logger.info(f"\n✓ Best Model Selected: {self.best_model_name}")
-        self.logger.info(f"  {primary_metric}: {self.best_model_score:.4f}")
+        self.logger.info(f"  Test {primary_metric}: {self.best_model_score:.4f}")
+        self.logger.info(f"  CV {primary_metric}: {best_result['cv_results'].get('cv_mean', 0):.4f}")
         self.logger.info(f"  Tuned: {best_result['is_tuned']}")
         self.logger.info(f"  Training time: {best_result['training_time']:.2f}s")
         
         # Log selection criteria
         self.logger.info(f"\nSelection Criteria:")
-        self.logger.info(f"  Primary metric ({primary_metric}): {best_result['test_metrics'][primary_metric]:.4f}")
+        self.logger.info(f"  Primary metric (test {primary_metric}): {best_result['test_metrics'][primary_metric]:.4f}")
+        self.logger.info(f"  Cross-validation {primary_metric}: {best_result['cv_results'].get('cv_mean', 0):.4f}")
         self.logger.info(f"  Training time: {best_result['training_time']:.2f}s")
         self.logger.info(f"  Generalization gap: {best_result['generalization']['gap']:.4f}")
         
         # Show top 5 models for manual verification
         self.logger.info(f"\nTop 5 Models (for manual verification):")
         for i, result in enumerate(all_results[:5], 1):
+            test_score = result['test_metrics'][primary_metric]
+            cv_score = result['cv_results'].get('cv_mean', 0)
             self.logger.info(f"  {i}. {result['model_name']} ({'tuned' if result['is_tuned'] else 'baseline'}):")
-            self.logger.info(f"      {primary_metric}: {result['test_metrics'][primary_metric]:.4f}")
+            self.logger.info(f"      Test {primary_metric}: {test_score:.4f}")
+            self.logger.info(f"      CV {primary_metric}: {cv_score:.4f}")
             self.logger.info(f"      Training time: {result['training_time']:.2f}s")
             self.logger.info(f"      Gap: {result['generalization']['gap']:.4f}")
         
@@ -592,8 +597,8 @@ class ModelTrainingPipeline:
                         json.dump({
                             'model_name': best_result['model_name'],
                             'is_tuned': best_result['is_tuned'],
-                            'val_metrics': {k: v for k, v in best_result['val_metrics'].items() if isinstance(v, (int, float))},
                             'test_metrics': {k: v for k, v in best_result['test_metrics'].items() if isinstance(v, (int, float))},
+                            'cv_metrics': best_result['cv_results'],
                             'training_time': best_result['training_time']
                         }, f, indent=2)
                     
@@ -682,7 +687,7 @@ class ModelTrainingPipeline:
                 self.logger.info("MODEL TRAINING PIPELINE COMPLETED SUCCESSFULLY")
                 self.logger.info("="*80)
                 self.logger.info(f"Best Model: {self.best_model_name}")
-                self.logger.info(f"Validation F1-Score: {self.best_model_score:.4f}")
+                self.logger.info(f"Test F1-Score: {self.best_model_score:.4f}")
                 self.logger.info(f"Model saved to: {self.config['model_persistence']['best_model_path']}")
                 self.logger.info(f"MLflow UI: mlflow ui --backend-store-uri {self.config['mlflow']['tracking_uri']}")
                 

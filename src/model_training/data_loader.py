@@ -1,5 +1,5 @@
 """
-Data loading module for model training.
+Data loading module for model training .
 """
 
 import pandas as pd
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class TrainingDataLoader:
     """
-    Load preprocessed data for model training.
+    Load preprocessed data for model training (Train/Test split).
     
     Attributes:
         config: Configuration dictionary
@@ -38,12 +38,12 @@ class TrainingDataLoader:
         self.feature_names = None
         self.n_features = None
     
-    def load(self) -> Tuple[np.ndarray, np.ndarray,np.ndarray, np.ndarray]:
+    def load(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Load all datasets (train, test).
+        Load train and test datasets.
         
         Returns:
-            Tuple of (X_train, y_train X_test, y_test)
+            Tuple of (X_train, y_train, X_test, y_test)
         """
         logger.info("="*80)
         logger.info("LOADING TRAINING DATA")
@@ -68,7 +68,6 @@ class TrainingDataLoader:
         logger.info(f"  Features: {self.n_features}")
         logger.info(f"  Class distribution: {np.bincount(self.y_train.astype(int))}")
         
-        
         # Load test
         test_path = self.config.get('test_data')
         logger.info(f"Loading test data from: {test_path}")
@@ -81,7 +80,7 @@ class TrainingDataLoader:
         logger.info(f"  Class distribution: {np.bincount(self.y_test.astype(int))}")
         
         # Validate shapes
-        if self.X_train.shape[1]  != self.X_test.shape[1]:
+        if self.X_train.shape[1] != self.X_test.shape[1]:
             raise ValueError("Feature count mismatch between train/test sets")
         
         logger.info("✓ Data loaded successfully")
