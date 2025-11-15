@@ -10,7 +10,7 @@ from scipy.stats import mannwhitneyu, ttest_ind, chi2_contingency, kruskal
 from typing import Dict, List, Tuple, Optional
 import logging
 from joblib import Parallel, delayed
-from utils.io_utils import read_yaml
+from src.utils.io_utils import read_yaml
 logger = logging.getLogger(__name__)
 
 config =  read_yaml('config/EDA_config.yaml')

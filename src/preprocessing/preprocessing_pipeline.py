@@ -18,7 +18,7 @@ from utils import (
     read_yaml, write_csv, write_json, ensure_directory,
     get_timestamp, Timer, setup_logger
 )
-from preprocessing import (
+from src.preprocessing import (
     DataLoader, DataValidator, FeatureDropper,
     DataEncoder, DataScaler, DataSplitter
 )

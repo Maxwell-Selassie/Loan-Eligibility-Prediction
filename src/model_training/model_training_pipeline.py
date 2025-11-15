@@ -1,6 +1,4 @@
-# ============================================================================
-# FILE: src/model_training_pipeline.py
-# ============================================================================
+
 """
 Main Model Training Pipeline with MLflow Integration
 Production-grade ML training with experiment tracking.
@@ -28,16 +26,18 @@ import time
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import (
-    read_yaml, ensure_directory, get_timestamp,
-    Timer, setup_logger
-)
-from model_training import (
+
+from src.model_training import (
     TrainingDataLoader,
     ModelTrainer,
     HyperparameterTuner,
     ModelEvaluator,
     FeatureImportanceAnalyzer
+)
+
+from utils import (
+    read_yaml, ensure_directory, get_timestamp,
+    Timer, setup_logger
 )
 
 import logging

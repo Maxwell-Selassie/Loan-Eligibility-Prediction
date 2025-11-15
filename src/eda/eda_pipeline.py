@@ -14,10 +14,7 @@ warnings.filterwarnings('ignore')
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import (
-    read_csv, write_csv, read_yaml, write_json, save_joblib,
-    ensure_directory, get_timestamp, Timer, setup_logger
-)
+
 from eda.data_quality import (
     check_missing_values, check_duplicates, detect_outliers_iqr
 )
@@ -34,6 +31,10 @@ from eda.visualizations import (
     plot_target_distribution
 )
 
+from utils import (
+    read_csv, write_csv, read_yaml, write_json, save_joblib,
+    ensure_directory, get_timestamp, Timer, setup_logger
+)
 
 class EDAExecutionError(Exception):
     """Custom exception for EDA pipeline errors."""

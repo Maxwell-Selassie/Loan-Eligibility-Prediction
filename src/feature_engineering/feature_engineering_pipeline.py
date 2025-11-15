@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 import logging
 from pathlib import Path
 
-from feature_engineering import (
+from src.feature_engineering import (
     LogTransformer,
     PolynomialFeatureGenerator,
     InteractionFeatureCreator,

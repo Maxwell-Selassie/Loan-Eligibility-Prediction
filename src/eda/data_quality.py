@@ -8,7 +8,7 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 import logging
 from pathlib import Path
-from utils.io_utils import read_yaml
+from src.utils.io_utils import read_yaml
 
 logger = logging.getLogger(__name__)
 
