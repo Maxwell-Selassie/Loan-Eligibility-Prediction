@@ -20,8 +20,8 @@ data:
   target_column: 'Loan_Status'
   
   # Preprocessing artifacts
-  scaler_path: '../models/scaler.pkl'
-  encoder_path: '../models/encoder.pkl'
+  scaler_path: 'models/scaler.pkl'
+  encoder_path: 'models/encoder.pkl'
 
 # ==============================
 # MLFLOW CONFIGURATION

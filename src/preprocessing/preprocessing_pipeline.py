@@ -12,13 +12,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils import (
     read_yaml, write_csv, write_json, ensure_directory,
     get_timestamp, Timer, setup_logger
 )
-from src.preprocessing import (
+from preprocessing import (
     DataLoader, DataValidator, FeatureDropper,
     DataEncoder, DataScaler, DataSplitter
 )

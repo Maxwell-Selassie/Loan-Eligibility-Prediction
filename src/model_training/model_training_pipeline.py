@@ -24,10 +24,10 @@ from sklearn.calibration import calibration_curve
 import time
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-from src.model_training import (
+from model_training import (
     TrainingDataLoader,
     ModelTrainer,
     HyperparameterTuner,
@@ -705,7 +705,7 @@ def main():
     """Main entry point for model training pipeline."""
     try:
         # Initialize pipeline
-        pipeline = ModelTrainingPipeline(config_path="../config/model_training_config.yaml")
+        pipeline = ModelTrainingPipeline(config_path="config/model_training_config.yaml")
         
         # Execute
         results = pipeline.execute()
