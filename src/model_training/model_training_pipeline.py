@@ -327,7 +327,7 @@ class ModelTrainingPipeline:
             if model_name in ['RandomForest', 'XGBoost', 'LightGBM']:
                 self.feature_analyzer = FeatureImportanceAnalyzer(self.config, self.feature_names)
                 feature_importance_results = self.feature_analyzer.analyze(
-                    model, model_name, self.X_val, self.y_val
+                    model, model_name, self.X_test, self.y_test
                 )
             
             # Generate and log plots
@@ -407,7 +407,7 @@ class ModelTrainingPipeline:
         # Precision-Recall Curve
         try:
             fig, ax = plt.subplots(figsize=(8, 6))
-            PrecisionRecallDisplay.from_predictions(self.y_text, y_pred_proba, ax=ax)
+            PrecisionRecallDisplay.from_predictions(self.y_test, y_pred_proba, ax=ax)
             ax.set_title(f'Precision-Recall Curve - {model_name}')
             
             pr_path = plots_dir / f"{model_name}_pr_curve.png"

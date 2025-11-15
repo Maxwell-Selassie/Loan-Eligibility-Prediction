@@ -99,7 +99,6 @@ class TrainingDataLoader:
             'n_features': self.n_features,
             'feature_names': self.feature_names,
             'train_size': len(self.X_train),
-            'val_size': len(self.X_val),
             'test_size': len(self.X_test),
             'train_class_dist': np.bincount(self.y_train.astype(int)).tolist(),
             'test_class_dist': np.bincount(self.y_test.astype(int)).tolist()
