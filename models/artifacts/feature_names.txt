@@ -1,0 +1,30 @@
+Dependents
+Applicant_Income
+Coapplicant_Income
+Loan_Amount
+Loan_Amount_Term
+Credit_History
+Applicant_Income_log
+Coapplicant_Income_log
+Total_Income
+Income_Ratio
+Loan_to_Income
+Income_per_Dependent
+Applicant_Income^2
+Applicant_Income Coapplicant_Income
+Applicant_Income Loan_Amount
+Coapplicant_Income^2
+Coapplicant_Income Loan_Amount
+Loan_Amount^2
+EMI
+Loan_Income_Ratio
+EMI_to_Income
+Has_Coapplicant
+Total_Experience
+Loan_Term_Years
+Married_Yes
+Education_Not Graduate
+Gender_Male
+Self_Employed_Yes
+Property_Area_Semiurban
+Property_Area_Urban

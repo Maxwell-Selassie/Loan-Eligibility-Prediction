@@ -47,7 +47,41 @@ mlflow:
     enabled: True
     register_best_model: True
     model_name: 'LoanEligibilityClassifier'
-    stage: 'Production'  # None, Staging, Production, Archived
+    stage: 'Staging'  # None, Staging, Production, Archived
+    
+    # Require manual promotion
+    auto_promote_to_production: False
+    
+    # Performance gates
+    min_performance_threshold:
+      f1_score: 0.70
+      roc_auc: 0.75
+    
+    # Compare with production
+    compare_with_production: True
+    min_improvement_required: 0.01
+
+model_validation:
+  enabled: True
+  
+  thresholds:
+    f1_score:
+      min: 0.70
+      warning: 0.75
+      target: 0.85
+    
+    roc_auc:
+      min: 0.75
+      warning: 0.80
+      target: 0.90
+    
+    train_test_gap:
+      max: 0.15
+      warning: 0.10
+  
+  business_rules:
+    min_recall_for_positive_class: 0.80
+    max_false_positive_rate: 0.30
 
 # ==============================
 # MODELS CONFIGURATION
@@ -137,7 +171,7 @@ hyperparameter_tuning:
       max_depth: ['int', 3, 30]
       min_samples_split: ['int', 2, 20]
       min_samples_leaf: ['int', 1, 10]
-      max_features: ['categorical', ['sqrt', 'log2', None]]
+      max_features: ['categorical', ['sqrt', 'log2']]
     
     XGBoost:
       n_estimators: ['int', 50, 500]

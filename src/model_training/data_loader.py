@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 class TrainingDataLoader:
     """
-    Load preprocessed data for model training (Train/Test split).
+    Load preprocessed data for model training.
     
     Attributes:
         config: Configuration dictionary
         X_train, y_train: Training data
-        X_test, y_test: Test data
+        X_val, y_val: Test data
     """
     
     def __init__(self, config: Dict[str, Any]):
@@ -32,8 +32,8 @@ class TrainingDataLoader:
         
         self.X_train = None
         self.y_train = None
-        self.X_test = None
-        self.y_test = None
+        self.X_val = None
+        self.y_val = None
         
         self.feature_names = None
         self.n_features = None
@@ -43,7 +43,7 @@ class TrainingDataLoader:
         Load train and test datasets.
         
         Returns:
-            Tuple of (X_train, y_train, X_test, y_test)
+            Tuple of (X_train, y_train, X_val, y_val)
         """
         logger.info("="*80)
         logger.info("LOADING TRAINING DATA")
@@ -73,19 +73,19 @@ class TrainingDataLoader:
         logger.info(f"Loading test data from: {test_path}")
         df_test = pd.read_csv(test_path)
         
-        self.X_test = df_test.drop(columns=[target_col]).values
-        self.y_test = df_test[target_col].values
+        self.X_val = df_test.drop(columns=[target_col]).values
+        self.y_val = df_test[target_col].values
         
-        logger.info(f"  Test: X={self.X_test.shape}, y={self.y_test.shape}")
-        logger.info(f"  Class distribution: {np.bincount(self.y_test.astype(int))}")
+        logger.info(f"  Test: X={self.X_val.shape}, y={self.y_val.shape}")
+        logger.info(f"  Class distribution: {np.bincount(self.y_val.astype(int))}")
         
         # Validate shapes
-        if self.X_train.shape[1] != self.X_test.shape[1]:
+        if self.X_train.shape[1] != self.X_val.shape[1]:
             raise ValueError("Feature count mismatch between train/test sets")
         
         logger.info("✓ Data loaded successfully")
         
-        return self.X_train, self.y_train, self.X_test, self.y_test
+        return self.X_train, self.y_train, self.X_val, self.y_val
     
     def get_metadata(self) -> Dict[str, Any]:
         """
@@ -98,7 +98,7 @@ class TrainingDataLoader:
             'n_features': self.n_features,
             'feature_names': self.feature_names,
             'train_size': len(self.X_train),
-            'test_size': len(self.X_test),
+            'test_size': len(self.X_val),
             'train_class_dist': np.bincount(self.y_train.astype(int)).tolist(),
-            'test_class_dist': np.bincount(self.y_test.astype(int)).tolist()
+            'test_class_dist': np.bincount(self.y_val.astype(int)).tolist()
         }

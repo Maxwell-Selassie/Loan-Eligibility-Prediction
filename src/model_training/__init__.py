@@ -5,6 +5,7 @@ from .model_trainer import ModelTrainer
 from .hyperparameter_tuner import HyperparameterTuner
 from .model_evaluator import ModelEvaluator
 from .feature_importance_analyzer import FeatureImportanceAnalyzer
+from .model_validator import ModelValidator
 
 __all__ = [
     'TrainingDataLoader',
@@ -12,4 +13,5 @@ __all__ = [
     'HyperparameterTuner',
     'ModelEvaluator',
     'FeatureImportanceAnalyzer',
+    'ModelValidator'
 ]
