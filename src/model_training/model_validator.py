@@ -6,6 +6,7 @@ import logging
 from typing import Dict, Any, Optional
 import mlflow
 from mlflow.tracking import MlflowClient
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,8 @@ class ModelValidator:
         
         # Check false positive rate (don't approve bad loans)
         if confusion_matrix is not None:
-            tn, fp, fn, tp = confusion_matrix.ravel()
+            cm = np.array(confusion_matrix)
+            tn, fp, fn, tp = cm.ravel()
             fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
             
             max_fpr = business_rules.get('max_false_positive_rate', 0.30)
