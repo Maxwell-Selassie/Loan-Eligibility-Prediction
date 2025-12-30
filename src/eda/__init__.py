@@ -1,14 +1,4 @@
-from .data_quality import (
-    check_missing_values,
-    check_duplicates,
-    detect_outliers_iqr
-)
-
-from .descriptive_stats import (
-    compute_basic_stats,
-    analyze_numeric_columns,
-    analyze_categorical_columns
-)
+from .descriptive_stats import DescriptiveStats
 
 from .inferential_stats import (
     calculate_confidence_interval,

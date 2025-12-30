@@ -18,7 +18,7 @@ from .time_utils import (
     format_duration,
     Timer,
 )
-from .logger_utils import setup_logger, get_logger
+from .logger_utils import setup_logger, get_logger, LoggerMixin
 
 __all__ = [
     "read_csv",
@@ -37,4 +37,5 @@ __all__ = [
     "Timer",
     "setup_logger",
     "get_logger",
+    "LoggerMixin"
 ]

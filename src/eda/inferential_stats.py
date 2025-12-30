@@ -8,27 +8,30 @@ import numpy as np
 from scipy import stats
 from scipy.stats import mannwhitneyu, ttest_ind, chi2_contingency, kruskal
 from typing import Dict, List, Tuple, Optional
-import logging
 from joblib import Parallel, delayed
-from utils.io_utils import read_yaml
-logger = logging.getLogger(__name__)
+from utils import LoggerMixin, ensure_directory
+import mlflow
+from pathlib import Path
+class InferentialStats(LoggerMixin):
 
-config =  read_yaml('config/EDA_config.yaml')
+    def __init__(self, config):
+        self.config = config
+        self.logger = self.setup_class_logger('Inferential_stats', config, 'logging')
 
-def calculate_confidence_interval(
+def calculate_confidence_interval(self,
     data: pd.Series,
-    confidence: float = config['statistics'].get('confidence_level', 0.95)
 ) -> Dict[str, float]:
     """
     Calculate confidence interval for a numeric variable.
     
     Args:
         data: Numeric data series
-        confidence: Confidence level
         
     Returns:
         Dictionary with CI statistics
     """
+    confidence: float = self.config['statistics'].get('confidence_level', 0.95)
+
     data_clean = data.dropna()
     n = len(data_clean)
     
@@ -49,41 +52,45 @@ def calculate_confidence_interval(
     }
 
 
-def compute_confidence_intervals(
-    df: pd.DataFrame,
-    numeric_columns: List[str],
-    confidence: float = 0.95
+def compute_confidence_intervals(self,
+    df: pd.DataFrame
 ) -> Dict[str, Dict[str, float]]:
     """
     Compute confidence intervals for all numeric columns.
     
     Args:
         df: Input DataFrame
-        numeric_columns: List of numeric columns
-        confidence: Confidence level
         
     Returns:
         Dictionary mapping column names to CI statistics
     """
-    logger.info(f"Computing {confidence*100}% confidence intervals...")
+    numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+    confidence: float = self.config['statistics'].get('confidence_level', 0.95)
+
+    self.logger.info(f"Computing {confidence*100}% confidence intervals...")
     
     ci_results = {}
     for col in numeric_columns:
         ci = calculate_confidence_interval(df[col], confidence)
         if ci is not None:
             ci_results[col] = ci
-            logger.info(f"{col}: Mean={ci['mean']:.2f}, CI=[{ci['lower_bound']:.2f}, {ci['upper_bound']:.2f}]")
+            self.logger.info(f"{col}: Mean={ci['mean']:.2f}, CI=[{ci['lower_bound']:.2f}, {ci['upper_bound']:.2f}]")
     
-    return ci_results
+    ci_results = pd.DataFrame(ci_results)
+    CI_PATH = Path('artifacts/inference/confidence_interval.csv')
+    ensure_directory(CI_PATH)
+    ci_results.to_csv(CI_PATH)
+
+    mlflow.log_artifact(CI_PATH)
 
 
-def compare_two_groups_ttest(
+
+def compare_two_groups_ttest(self,
     df: pd.DataFrame,
     numeric_col: str,
     grouping_col: str,
     group1_val: str,
     group2_val: str,
-    alpha: float = config['statistics'].get('significance_level', 0.05)
 ) -> Dict[str, any]:
     """
     Compare two groups using t-test or Mann-Whitney U test.
@@ -99,13 +106,15 @@ def compare_two_groups_ttest(
     Returns:
         Dictionary with test results
     """
+
+    alpha: float = self.config['statistics'].get('significance_level', 0.05)
     # Extract groups
     group1 = df[df[grouping_col] == group1_val][numeric_col].dropna()
     group2 = df[df[grouping_col] == group2_val][numeric_col].dropna()
     
     # Check minimum sample size
     if len(group1) < 3 or len(group2) < 3:
-        logger.warning(f"{numeric_col}: Insufficient sample size")
+        self.logger.warning(f"{numeric_col}: Insufficient sample size")
         return None
     
     # Check normality (sample if large dataset)
@@ -151,32 +160,27 @@ def compare_two_groups_ttest(
     }
 
 
-def run_ttest_parallel(
+def run_ttest_parallel(self,
     df: pd.DataFrame,
-    numeric_columns: List[str],
-    target_column: str = config['data'].get('target_column'),
-    positive_value: str = config['data'].get('target_positive_value'),
-    negative_value: str = config['data'].get('target_negative_value'),
-    n_jobs: int = -1
 ) -> Dict[str, Dict[str, any]]:
     """
     Run t-tests for multiple columns in parallel.
     
     Args:
         df: Input DataFrame
-        numeric_columns: List of numeric columns to test
-        target_column: Target column
-        positive_value: Positive class value
-        negative_value: Negative class value
-        n_jobs: Number of parallel jobs
         
     Returns:
         Dictionary mapping column names to test results
     """
-    logger.info(f"Running t-tests for {len(numeric_columns)} columns (parallel)...")
+    target_column: str = self.config['data'].get('target_column')
+    positive_value: str = self.config['data'].get('target_positive_value')
+    negative_value: str = self.config['data'].get('target_negative_value')
+
+    numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
+    self.logger.info(f"Running t-tests for {len(numeric_columns)} columns (parallel)...")
     
     # Parallel execution
-    results = Parallel(n_jobs=n_jobs, backend='threading')(
+    results = Parallel(n_jobs=-1, backend='threading')(
         delayed(compare_two_groups_ttest)(
             df, col, target_column, positive_value, negative_value
         )
@@ -192,12 +196,20 @@ def run_ttest_parallel(
     
     # Log summary
     significant_count = sum(1 for r in ttest_results.values() if r['significant'])
-    logger.info(f"Completed: {significant_count}/{len(ttest_results)} columns show significant differences")
+    self.logger.info(f"Completed: {significant_count}/{len(ttest_results)} columns show significant differences")
+
+    ttest_results = pd.DataFrame(ttest_results)
+    TTEST_PATH = Path('artifacts/inference/ttest_results.csv')
+    ensure_directory(TTEST_PATH)
+    ttest_results.to_csv(TTEST_PATH)
+
+    mlflow.log_artifact(TTEST_PATH)
+    
     
     return ttest_results
 
 
-def chi_square_test(
+def chi_square_test(self,
     df: pd.DataFrame,
     cat_col: str,
     target_col: str,
@@ -221,7 +233,7 @@ def chi_square_test(
     chi2, p_value, dof, expected = chi2_contingency(contingency_table)
     
     if (expected < 5).any():
-        logger.warning(f"{cat_col}: Expected frequencies < 5, results may be unreliable")
+        self.logger.warning(f"{cat_col}: Expected frequencies < 5, results may be unreliable")
     
     # Cramér's V effect size
     n = contingency_table.sum().sum()
@@ -249,10 +261,8 @@ def chi_square_test(
     }
 
 
-def run_chi_square_tests(
+def run_chi_square_tests(self,
     df: pd.DataFrame,
-    categorical_columns: List[str],
-    target_column: str,
     alpha: float = 0.05
 ) -> Dict[str, Dict[str, any]]:
     """
@@ -267,7 +277,10 @@ def run_chi_square_tests(
     Returns:
         Dictionary mapping column names to test results
     """
-    logger.info(f"Running chi-square tests for {len(categorical_columns)} columns...")
+    categorical_columns = df.select_dtypes(exclude=[np.number]).columns.tolist()
+    target_column: str = self.config['data'].get('target_column')
+
+    self.logger.info(f"Running chi-square tests for {len(categorical_columns)} columns...")
     
     chi_square_results = {}
     
@@ -277,63 +290,71 @@ def run_chi_square_tests(
             chi_square_results[col] = result
             
             sig_marker = "✓" if result['significant'] else "✗"
-            logger.info(f"{col}: χ²={result['chi2']:.2f}, p={result['p_value']:.4f}, V={result['cramers_v']:.3f} {sig_marker}")
+            self.logger.info(f"{col}: χ²={result['chi2']:.2f}, p={result['p_value']:.4f}, V={result['cramers_v']:.3f} {sig_marker}")
         except Exception as e:
-            logger.error(f"Error in chi-square test for {col}: {e}")
+            self.logger.error(f"Error in chi-square test for {col}: {e}")
     
     # Log summary
     significant_count = sum(1 for r in chi_square_results.values() if r['significant'])
-    logger.info(f"Completed: {significant_count}/{len(chi_square_results)} columns show significant association")
+    self.logger.info(f"Completed: {significant_count}/{len(chi_square_results)} columns show significant association")
+
+    chi_square_results = pd.DataFrame(chi_square_results)
+    CS_PATH = Path('artifacts/inference/chi_square.csv')
+    ensure_directory(CS_PATH)
+    chi_square_results.to_csv(CS_PATH)
+
+    mlflow.log_artifact(CS_PATH)
+
     
     return chi_square_results
 
 
-def multi_group_comparison(
-    df: pd.DataFrame,
-    numeric_col: str,
-    grouping_col: str,
-    alpha: float = 0.05
-) -> Optional[Dict[str, any]]:
-    """
-    Compare numeric variable across multiple groups (ANOVA/Kruskal-Wallis).
+# def multi_group_comparison(self,
+#     df: pd.DataFrame,
+#     numeric_col: str,
+#     grouping_col: str,
+#     alpha: float = 0.05
+# ) -> Optional[Dict[str, any]]:
+#     """
+#     Compare numeric variable across multiple groups (ANOVA/Kruskal-Wallis).
     
-    Args:
-        df: Input DataFrame
-        numeric_col: Numeric column to compare
-        grouping_col: Grouping column
-        alpha: Significance level
+#     Args:
+#         df: Input DataFrame
+#         numeric_col: Numeric column to compare
+#         grouping_col: Grouping column
+#         alpha: Significance level
         
-    Returns:
-        Dictionary with test results or None if insufficient data
-    """
-    groups = [group[numeric_col].dropna() for name, group in df.groupby(grouping_col)]
+#     Returns:
+#         Dictionary with test results or None if insufficient data
+#     """
+#     groups = [group[numeric_col].dropna() for name, group in df.groupby(grouping_col)]
     
-    # Check minimum sample size
-    if len(groups) < 2 or any(len(g) < 3 for g in groups):
-        logger.warning(f"{numeric_col} vs {grouping_col}: Insufficient sample size")
-        return None
+#     # Check minimum sample size
+#     if len(groups) < 2 or any(len(g) < 3 for g in groups):
+#         self.logger.warning(f"{numeric_col} vs {grouping_col}: Insufficient sample size")
+#         return None
     
-    # Check normality for each group
-    normality_pvals = [
-        stats.shapiro(g.sample(min(5000, len(g)), random_state=42))[1] 
-        for g in groups
-    ]
+#     # Check normality for each group
+#     normality_pvals = [
+#         stats.shapiro(g.sample(min(5000, len(g)), random_state=42))[1] 
+#         for g in groups
+#     ]
     
-    # Choose test
-    if all(p >= alpha for p in normality_pvals):
-        statistic, p_value = stats.f_oneway(*groups)
-        test_type = "One-way ANOVA"
-    else:
-        statistic, p_value = kruskal(*groups)
-        test_type = "Kruskal-Wallis H-test"
+#     # Choose test
+#     if all(p >= alpha for p in normality_pvals):
+#         statistic, p_value = stats.f_oneway(*groups)
+#         test_type = "One-way ANOVA"
+#     else:
+#         statistic, p_value = kruskal(*groups)
+#         test_type = "Kruskal-Wallis H-test"
     
-    return {
-        'test_type': test_type,
-        'statistic': round(float(statistic), 4),
-        'p_value': round(float(p_value), 6),
-        'significant': p_value < alpha,
-        'group_means': {
-            str(name): round(float(group[numeric_col].mean()), 4)
-            for name, group in df.groupby(grouping_col)
-        }
-    }
+#     return {
+#         'test_type': test_type,
+#         'statistic': round(float(statistic), 4),
+#         'p_value': round(float(p_value), 6),
+#         'significant': p_value < alpha,
+#         'group_means': {
+#             str(name): round(float(group[numeric_col].mean()), 4)
+#             for name, group in df.groupby(grouping_col)
+#         }
+#     }

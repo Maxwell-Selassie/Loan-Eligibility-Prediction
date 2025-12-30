@@ -77,13 +77,13 @@ visualization:
   style: "seaborn-v0_8-darkgrid"
   context: "notebook"  # paper, notebook, talk, poster
   palette: "Set2"
-  figure_size_univariate: [18, 10]
-  figure_size_multivariate: [15, 10]
+  figure_size_univariate: [15, 10]
+  figure_size_multivariate: [18, 10]
   
   # Save options
   save_plots: true
   show_plots: false  # Set to false in production
-  bbox_inches: "tight"
+
   
   # Plot-specific settings
   histogram:
@@ -96,10 +96,7 @@ visualization:
     meanline: true
   
   heatmap:
-    annot: true
-    fmt: ".2f"
-    cmap: "Blues"
-    linewidths: 0.5
+    method: 'spearman'
 
 # Performance Configuration
 performance:

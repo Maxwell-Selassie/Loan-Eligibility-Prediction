@@ -6,13 +6,13 @@ import logging
 import sys
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
-from typing import Optional, Union
+from typing import Optional, Any
 import os
-
+from utils import ensure_directory
 
 def setup_logger(
     name: str,
-    log_dir: Union[str, Path],
+    log_dir: str | Path,
     log_level: str = "INFO",
     max_bytes: int = 10485760,  # 10MB
     backup_count: int = 7,
@@ -111,3 +111,38 @@ def get_logger(name: str) -> logging.Logger:
         Logger instance
     """
     return logging.getLogger(name)
+
+class LoggerMixin:
+    '''create a singleton logger class'''
+    def setup_class_logger(
+            self,
+            name: str,
+            config: dict[str,Any],
+            parent_key:str | None = None
+    ):
+    
+        # check if parent key is available in config file and extract it
+        try:
+            if parent_key and parent_key in config:
+                log_config = config[parent_key].get('logging', {})
+            
+            else:
+                log_config = config.get('logging', {})
+
+            # setup the log directory
+            log_dir = Path(log_config.get('log_dir','/logs'))
+            ensure_directory(log_dir)
+
+            # create logger
+            logger = setup_logger(
+                name=name,
+                log_dir=log_dir
+            )
+
+            return logger
+        
+        except Exception as e:
+            logging.basicConfig(level=logging.INFO)
+            logger = logging.getLogger(name)
+            logger.error(f'Error setting up logger : {e}')
+            return logger
