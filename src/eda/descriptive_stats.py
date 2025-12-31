@@ -117,6 +117,27 @@ class DescriptiveStats(LoggerMixin):
         
         return summary_df, cat_cols
     
+                # Target variable distribution
+    def target_col_dist(self, df):
+        '''Analyze the distribution of the target variable'''
+
+        target_col = self.config['data'].get('target_column','Loan Status')   
+
+        try:
+            if target_col and target_col in self.df.columns:
+                target_dist = df[target_col].value_counts().to_dict()
+
+                        
+                self.logger.info(f"Target variable '{target_col}' distribution:")
+                for value, count in target_dist.items():
+                    pct = (count / len(self.df)) * 100
+                    self.logger.info(f"  {value}: {count:,} ({pct:.2f}%)")
+                
+        except Exception as e:
+            self.logger.error(f"Target analysis failed: {e}", exc_info=True)
+            raise 
+    
+    
     def run_descriptive_stats(self, df):
         '''Run all descriptive statistics'''
         stats = self.compute_basic_stats(df)
