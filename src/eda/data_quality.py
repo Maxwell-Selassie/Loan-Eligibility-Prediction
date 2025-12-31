@@ -36,6 +36,7 @@ class DataQuality(LoggerMixin):
         self.logger.info("Analyzing missing values...")
         
         missing = df.isnull().sum()
+        mlflow.log_metric('total_missing',missing.sum())
         missing = missing[missing > 0].sort_values(ascending=False)
         
         if len(missing) == 0:
@@ -57,6 +58,9 @@ class DataQuality(LoggerMixin):
         # Log summary
         critical_cols = missing_df[missing_df['severity'] == 'CRITICAL']
         warning_cols = missing_df[missing_df['severity'] == 'WARNING']
+
+        mlflow.log_metric('total_critical_cols', len(critical_cols))
+        mlflow.log_metric('total_warning_cols', len(warning_cols))
         
         self.logger.info(f"Missing values found in {len(missing_df)} columns")
         if len(critical_cols) > 0:
@@ -87,6 +91,7 @@ class DataQuality(LoggerMixin):
             
             duplicates = df.duplicated(keep='first')
             n_duplicates = duplicates.sum()
+            mlflow.log_metric('n_duplicates', n_duplicates)
             
             if n_duplicates == 0:
                 self.logger.info("No duplicate rows found")
@@ -144,6 +149,8 @@ class DataQuality(LoggerMixin):
                 outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
                 n_outliers = outlier_mask.sum()
                 outlier_pct = (n_outliers / len(df)) * 100
+                mlflow.log_metric('n_outliers', n_outliers)
+                mlflow.log_metric('outlier_pct', outlier_pct)
                 
                 outlier_summary[col] = {
                     'count': int(n_outliers),

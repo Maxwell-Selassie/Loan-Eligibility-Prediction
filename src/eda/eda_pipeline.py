@@ -198,18 +198,18 @@ class EDAPipeline(LoggerMixin):
                         self.load_data()
                 
                     with mlflow.start_run(run_name='Descriptive Stats',nested=True):
-                        DescriptiveStats.run_descriptive_stats(self.df)
+                        DescriptiveStats(self.config).run_descriptive_stats(self.df)
 
                     with mlflow.start_run(run_name='Data_quality', nested=True):
-                        DataQuality.run_data_quality_checks(self.df)
+                        DataQuality(self.config).run_data_quality_checks(self.df)
 
                     with mlflow.start_run(run_name='Inferential_stats', nested=True):
-                        InferentialStats.compute_confidence_intervals(self.df)
-                        InferentialStats.run_ttest_parallel(self.df)
-                        InferentialStats.run_chi_square_tests(self.df)
+                        InferentialStats(self.config).compute_confidence_intervals(self.df)
+                        InferentialStats(self.config).run_ttest_parallel(self.df)
+                        InferentialStats(self.config).run_chi_square_tests(self.df)
                 
                     with mlflow.start_run(run_name='Visualizations', nested=True):
-                        Visualizations.run_visualizations(self.df)
+                        Visualizations(self.config).run_visualizations(self.df)
 
                     with mlflow.start_run(run_name='Summary report', nested=True):
                         self._generate_summary_report()

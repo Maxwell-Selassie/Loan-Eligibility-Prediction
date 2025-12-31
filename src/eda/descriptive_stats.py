@@ -15,6 +15,7 @@ class DescriptiveStats(LoggerMixin):
     def __init__(self, config):
         self.config = config
         self.logger = self.setup_class_logger('Descriptive_stats', config,'logging')
+        self.output_dir = config['data'].get('artifacts_path', 'artifacts/')
 
     def compute_basic_stats(self,df: pd.DataFrame) -> Dict[str, any]:
         """
@@ -34,6 +35,7 @@ class DescriptiveStats(LoggerMixin):
             'memory_usage_mb': df.memory_usage(deep=True).sum() / (1024**2),
             'columns': df.columns.tolist()
         }
+
         
         self.logger.info(f"Dataset: {stats['n_rows']:,} rows x {stats['n_columns']} columns")
         self.logger.info(f"Memory usage: {stats['memory_usage_mb']:.2f} MB")
@@ -140,12 +142,20 @@ class DescriptiveStats(LoggerMixin):
     
     def run_descriptive_stats(self, df):
         '''Run all descriptive statistics'''
+        # BASIC STATISTICS
         stats = self.compute_basic_stats(df)
-        STATS_PATH = Path('artifacts/eda_results/basic_stats.json')
+
+        # log basic stats
+        mlflow.log_metric('n_rows',stats['n_rows'])
+        mlflow.log_metric('n_columns',stats['n_columns'])
+        mlflow.log_metric('memory_usage_mb',stats['memory_usage_mb'])
+
+        STATS_PATH = Path(f'{self.output_dir}/basic_stats.json')
         ensure_directory(STATS_PATH)
         try:
             self.logger.info(f'Writing basic descriptive stats results to a json file..')
-            write_json(stats, STATS_PATH, indent=4)
+            stats = pd.DataFrame(stats)
+            stats.to_json(STATS_PATH, indent=4)
             self.logger.info(f'Data written succcessfully written to: {STATS_PATH}')
             mlflow.log_artifact(STATS_PATH)
             self.logger.info(f'Descriptive stats results logged to MLflow successfully')
@@ -155,7 +165,8 @@ class DescriptiveStats(LoggerMixin):
 
         # analyzing numeric columns
         summary, numeric_cols = self.analyze_numeric_columns(df)
-        SUMMARY_PATH = Path('artifacts/eda_results/numerical_summary.csv')
+
+        SUMMARY_PATH = Path(f'{self.output_dir}/summary_path.csv')
         ensure_directory(SUMMARY_PATH)
         try:
             self.logger.info(f"Writing data to csv file...")
@@ -169,8 +180,11 @@ class DescriptiveStats(LoggerMixin):
             raise
         mlflow.log_artifact(SUMMARY_PATH)
 
+
+        # analyzing categorical columns
         summary_df, cat_cols = self.analyze_categorical_columns(df)
-        SUMMARY_PATH = Path('artifacts/eda_results/categorical_summary.csv')
+
+        SUMMARY_PATH = Path(f'{self.output_dir}/categorical_summary.csv')
         ensure_directory(SUMMARY_PATH)
         try:
             self.logger.info(f"Writing data to csv file...")
