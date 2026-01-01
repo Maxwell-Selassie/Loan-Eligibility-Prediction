@@ -76,12 +76,12 @@ class InferentialStats(LoggerMixin):
                 ci_results[col] = ci
                 self.logger.info(f"{col}: Mean={ci['mean']:.2f}, CI=[{ci['lower_bound']:.2f}, {ci['upper_bound']:.2f}]")
         
-        ci_results = pd.DataFrame(ci_results)
-        CI_PATH = Path('data/artifacts/confidence_interval.csv')
-        ensure_directory(CI_PATH)
-        ci_results.to_csv(CI_PATH)
+        # ci_results = pd.DataFrame(ci_results)
+        # CI_PATH = Path('inference/confidence_interval.csv')
+        # ensure_directory(CI_PATH)
+        # ci_results.to_csv(CI_PATH)
 
-        mlflow.log_artifact(CI_PATH)
+        # mlflow.log_artifact(CI_PATH)
 
 
 
@@ -198,12 +198,12 @@ class InferentialStats(LoggerMixin):
         significant_count = sum(1 for r in ttest_results.values() if r['significant'])
         self.logger.info(f"Completed: {significant_count}/{len(ttest_results)} columns show significant differences")
 
-        ttest_results = pd.DataFrame(ttest_results)
-        TTEST_PATH = Path('data/artifacts/ttest_results.csv')
-        ensure_directory(TTEST_PATH)
-        ttest_results.to_csv(TTEST_PATH)
+        # ttest_results = pd.DataFrame(ttest_results)
+        # TTEST_PATH = Path('inference/ttest_results.csv')
+        # ensure_directory(TTEST_PATH)
+        # ttest_results.to_csv(TTEST_PATH)
 
-        mlflow.log_artifact(TTEST_PATH)
+        # mlflow.log_artifact(TTEST_PATH)
         
         
         return ttest_results
@@ -297,12 +297,12 @@ class InferentialStats(LoggerMixin):
         significant_count = sum(1 for r in chi_square_results.values() if r['significant'])
         self.logger.info(f"Completed: {significant_count}/{len(chi_square_results)} columns show significant association")
 
-        chi_square_results = pd.DataFrame(chi_square_results)
-        CS_PATH = Path('data/artifacts/chi_square.csv')
-        ensure_directory(CS_PATH)
-        chi_square_results.to_csv(CS_PATH)
+        # chi_square_results = pd.DataFrame(chi_square_results)
+        # CS_PATH = Path('inference/chi_square.csv')
+        # ensure_directory(CS_PATH)
+        # chi_square_results.to_csv(CS_PATH)
 
-        mlflow.log_artifact(CS_PATH)
+        # mlflow.log_artifact(CS_PATH)
 
         
         return chi_square_results

@@ -61,7 +61,7 @@ class Visualizations(LoggerMixin):
             axes[idx].set_visible(False)
         
         plt.tight_layout()
-        output_file = Path(self.output_dir / "numeric_distributions.png")
+        output_file = Path(f"{self.output_dir}/numeric_distributions.png")
         plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
         plt.close(fig)
 
@@ -107,7 +107,7 @@ class Visualizations(LoggerMixin):
             axes[idx].set_visible(False)
         
         plt.tight_layout()
-        output_file = self.output_dir / "boxplots_outliers.png"
+        output_file = Path(f"{self.output_dir}/boxplots_outliers.png")
         plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
         plt.close(fig)
 
@@ -160,7 +160,7 @@ class Visualizations(LoggerMixin):
             axes[idx].set_visible(False)
         
         plt.tight_layout()
-        output_file = self.output_dir / "categorical_distributions.png"
+        output_file = Path(f"{self.output_dir}/categorical_distributions.png")
         plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
         plt.close(fig)
 
@@ -203,7 +203,7 @@ class Visualizations(LoggerMixin):
             ax.set_title(f'Correlation Heatmap ({method.capitalize()})', fontweight='bold', pad=20)
             
             plt.tight_layout()
-            output_file = self.output_dir / f"correlation_heatmap_{method}.png"
+            output_file = Path(f"{self.output_dir}/correlation_heatmap_{method}.png")
             plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
             plt.close(fig)
 
@@ -253,7 +253,7 @@ class Visualizations(LoggerMixin):
             ax.grid(True, alpha=0.3, axis='y')
             
             plt.tight_layout()
-            output_file = self.output_dir / "target_distribution.png"
+            output_file = Path(f"{self.output_dir}/target_distribution.png")
             plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
             plt.close(fig)
 
