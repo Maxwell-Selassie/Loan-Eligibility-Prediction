@@ -45,7 +45,7 @@ class Visualizations(LoggerMixin):
                 sns.histplot(
                     data=df, 
                     x=col, 
-                    kde=self.kde, 
+                    kde=True, 
                     ax=axes[idx],
                     color='purple',
                     alpha=0.7
@@ -204,7 +204,7 @@ class Visualizations(LoggerMixin):
             
             plt.tight_layout()
             output_file = self.output_dir / f"correlation_heatmap_{method}.png"
-            plt.savefig(output_file, dpi=self.pi, bbox_inches='tight')
+            plt.savefig(output_file, dpi=self.dpi, bbox_inches='tight')
             plt.close(fig)
 
             mlflow.log_artifact(output_file)

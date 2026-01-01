@@ -10,7 +10,7 @@
 data:
   raw_path: "data/raw/LEP.csv"
   processed_path: "data/processed/"
-  artifacts_path: "artifacts/"
+  artifacts_path: "artifacts/data/"
 
   
   # Column specifications

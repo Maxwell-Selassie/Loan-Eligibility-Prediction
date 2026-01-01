@@ -30,7 +30,7 @@ class DataQuality(LoggerMixin):
             Dictionary with missing value analysis
         """
 
-        warning_threshold: float = self.config['data_quality'].get('missing_threshold_warning', 0.05),
+        warning_threshold: float = self.config['data_quality'].get('missing_threshold_warning', 0.05)
         critical_threshold: float = self.config['data_quality'].get('missing_threshold_critical', 0.30)
 
         self.logger.info("Analyzing missing values...")
@@ -124,11 +124,10 @@ class DataQuality(LoggerMixin):
             Dictionary with outlier analysis per column
         """
 
-        multiplier: float = self.config['statistics'].get('outlier_iqr_multiplier', 1.5),
         id_column: str | None = self.config['data'].get('id_column', None)
 
         if self.config['data_quality']['detect_outliers'] and self.config['data_quality']['outlier_report']:
-            self.logger.info(f"Detecting outliers using IQR method (multiplier={multiplier})...")
+            self.logger.info(f"Detecting outliers using IQR method (Multiplier={1.5})...")
 
             numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
             
@@ -142,8 +141,8 @@ class DataQuality(LoggerMixin):
                 Q3 = df[col].quantile(0.75)
                 IQR = Q3 - Q1
                 
-                lower_bound = Q1 - multiplier * IQR
-                upper_bound = Q3 + multiplier * IQR
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
                 
                 # Vectorized outlier detection
                 outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)

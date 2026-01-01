@@ -15,7 +15,6 @@ class DescriptiveStats(LoggerMixin):
     def __init__(self, config):
         self.config = config
         self.logger = self.setup_class_logger('Descriptive_stats', config,'logging')
-        self.output_dir = config['data'].get('artifacts_path', 'artifacts/')
 
     def compute_basic_stats(self,df: pd.DataFrame) -> Dict[str, any]:
         """
@@ -126,7 +125,7 @@ class DescriptiveStats(LoggerMixin):
         target_col = self.config['data'].get('target_column','Loan Status')   
 
         try:
-            if target_col and target_col in self.df.columns:
+            if target_col and target_col in df.columns:
                 target_dist = df[target_col].value_counts().to_dict()
 
                         
@@ -150,12 +149,11 @@ class DescriptiveStats(LoggerMixin):
         mlflow.log_metric('n_columns',stats['n_columns'])
         mlflow.log_metric('memory_usage_mb',stats['memory_usage_mb'])
 
-        STATS_PATH = Path(f'{self.output_dir}/basic_stats.json')
-        ensure_directory(STATS_PATH)
+        STATS_PATH = Path(f'artifacts/data/basic_stats.json')
+
         try:
             self.logger.info(f'Writing basic descriptive stats results to a json file..')
-            stats = pd.DataFrame(stats)
-            stats.to_json(STATS_PATH, indent=4)
+            write_json(stats, STATS_PATH, indent=4)
             self.logger.info(f'Data written succcessfully written to: {STATS_PATH}')
             mlflow.log_artifact(STATS_PATH)
             self.logger.info(f'Descriptive stats results logged to MLflow successfully')
@@ -166,8 +164,7 @@ class DescriptiveStats(LoggerMixin):
         # analyzing numeric columns
         summary, numeric_cols = self.analyze_numeric_columns(df)
 
-        SUMMARY_PATH = Path(f'{self.output_dir}/summary_path.csv')
-        ensure_directory(SUMMARY_PATH)
+        SUMMARY_PATH = Path(f'artifacts/data/summary_path.csv')
         try:
             self.logger.info(f"Writing data to csv file...")
             summary.to_csv(SUMMARY_PATH)
@@ -184,8 +181,8 @@ class DescriptiveStats(LoggerMixin):
         # analyzing categorical columns
         summary_df, cat_cols = self.analyze_categorical_columns(df)
 
-        SUMMARY_PATH = Path(f'{self.output_dir}/categorical_summary.csv')
-        ensure_directory(SUMMARY_PATH)
+        SUMMARY_PATH = Path(f'artifacts/data/categorical_summary.csv')
+
         try:
             self.logger.info(f"Writing data to csv file...")
             summary_df.to_csv(SUMMARY_PATH)
@@ -200,7 +197,7 @@ class DescriptiveStats(LoggerMixin):
 
         features = numeric_cols + cat_cols
         feature_store = Path('artifacts/feature_store.json')
-        ensure_directory(feature_store)
+
 
         try:
             self.logger.info(f'Saving feature names to a json file...')
