@@ -135,6 +135,4 @@ security:
   # Sanitize logs
   sanitize_logs: true
   
-  # File permissions
-  output_file_permissions: 0o644
-  log_file_permissions: 0o640
+

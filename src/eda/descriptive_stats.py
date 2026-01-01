@@ -149,7 +149,7 @@ class DescriptiveStats(LoggerMixin):
         mlflow.log_metric('n_columns',stats['n_columns'])
         mlflow.log_metric('memory_usage_mb',stats['memory_usage_mb'])
 
-        STATS_PATH = Path(f'artifacts/data/basic_stats.json')
+        STATS_PATH = Path(f'data/artifacts/basic_stats.json')
 
         try:
             self.logger.info(f'Writing basic descriptive stats results to a json file..')
@@ -161,10 +161,10 @@ class DescriptiveStats(LoggerMixin):
             self.logger.error(f'An error was encountered during this operation: {e}')
             raise
 
-        # analyzing numeric columns
+        # # analyzing numeric columns
         summary, numeric_cols = self.analyze_numeric_columns(df)
 
-        SUMMARY_PATH = Path(f'artifacts/data/summary_path.csv')
+        SUMMARY_PATH = Path(f'data/artifacts/summary_path.csv')
         try:
             self.logger.info(f"Writing data to csv file...")
             summary.to_csv(SUMMARY_PATH)
@@ -181,7 +181,7 @@ class DescriptiveStats(LoggerMixin):
         # analyzing categorical columns
         summary_df, cat_cols = self.analyze_categorical_columns(df)
 
-        SUMMARY_PATH = Path(f'artifacts/data/categorical_summary.csv')
+        SUMMARY_PATH = Path(f'data/artifacts/categorical_summary.csv')
 
         try:
             self.logger.info(f"Writing data to csv file...")
@@ -196,7 +196,7 @@ class DescriptiveStats(LoggerMixin):
         mlflow.log_artifact(SUMMARY_PATH)
 
         features = numeric_cols + cat_cols
-        feature_store = Path('artifacts/feature_store.json')
+        feature_store = Path('data/artifacts/feature_store.json')
 
 
         try:

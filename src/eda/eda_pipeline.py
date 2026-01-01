@@ -191,28 +191,28 @@ class EDAPipeline(LoggerMixin):
 
         try:
             with Timer("Complete EDA Pipeline", self.logger):
-                with mlflow.start_run(run_name='Complete EDA_Pipeline',nested=True):
+                with mlflow.start_run(run_name='Complete EDA_Pipeline') as parent_run:
                 
                 # Load data
-                    with mlflow.start_run(run_name='Load Data', nested=True):
-                        self.load_data()
+                    mlflow.set_tag('component','load_data')
+                    df = self.load_data()
                 
-                    with mlflow.start_run(run_name='Descriptive Stats',nested=True):
-                        DescriptiveStats(self.config).run_descriptive_stats(self.df)
+                    mlflow.set_tag('component','descriptive_stats')
+                    DescriptiveStats(self.config).run_descriptive_stats(df)
 
-                    with mlflow.start_run(run_name='Data_quality', nested=True):
-                        DataQuality(self.config).run_data_quality_checks(self.df)
+                    mlflow.set_tag('component','data_quality')
+                    DataQuality(self.config).run_data_quality_checks(df)
 
-                    with mlflow.start_run(run_name='Inferential_stats', nested=True):
-                        InferentialStats(self.config).compute_confidence_intervals(self.df)
-                        InferentialStats(self.config).run_ttest_parallel(self.df)
-                        InferentialStats(self.config).run_chi_square_tests(self.df)
+                    mlflow.set_tag('component', 'inferential_stats')
+                    InferentialStats(self.config).compute_confidence_intervals(df)
+                    InferentialStats(self.config).run_ttest_parallel(df)
+                    InferentialStats(self.config).run_chi_square_tests(df)
                 
-                    with mlflow.start_run(run_name='Visualizations', nested=True):
-                        Visualizations(self.config).run_visualizations(self.df)
+                    mlflow.set_tag('component','visualizations')
+                    Visualizations(self.config).run_visualizations(df)
 
-                    with mlflow.start_run(run_name='Summary report', nested=True):
-                        self._generate_summary_report()
+                    mlflow.set_tag('component','generate_summary_report')
+                    self._generate_summary_report()
                 
                 
                 self.logger.info("="*80)
