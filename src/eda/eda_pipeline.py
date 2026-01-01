@@ -185,8 +185,8 @@ class EDAPipeline(LoggerMixin):
             EDAExecutionError: If pipeline execution fails
         """
 
-        mlflow.set_tracking_uri(f'sqlite:///loan_eligibility.db')
-        mlflow.set_experiment(f'LOAN ELIGIBILITY PREDICTION')
+        mlflow.set_tracking_uri(f'http://localhost:5000')
+        mlflow.set_experiment(f'EDA_LOAN_ELIGIBILITY_PREDICTION')
 
 
         try:
