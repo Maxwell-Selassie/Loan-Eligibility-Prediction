@@ -5,40 +5,35 @@ Data loading module with validation and optimization.
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Dict, Any
-import mlflow
+from typing import Dict, Any, Optional
+import logging
+import sys
 
 # Add parent directory to path
-from utils import read_csv, Timer, LoggerMixin
+
+from utils import read_csv, Timer
+
+logger = logging.getLogger(__name__)
 
 
-
-
-class DataLoader(LoggerMixin):
+class DataLoader:
     """
-    Load and prepare data for preprocessing pipeline. 
-    This class loads raw data from the source (csv file path)
-    that will be processsed for model training
+    Load and prepare data for preprocessing pipeline.
     
     Attributes:
         config: Configuration dictionary
         df: Loaded DataFrame
-
-    Examples:
-        >>> load_data = DataLoader(config)
-        >>> load_data.load()
     """
     
     def __init__(self, config: Dict[str, Any]):
         """
-        Initialize DataLoader. 
-        Configurations are in a yaml file(config/preprocessing_config.yaml)
+        Initialize DataLoader.
         
         Args:
             config: Configuration dictionary
         """
         self.config = config
-        self.logger = self.setup_class_logger('data_loader', config, 'logging')
+        self.df: Optional[pd.DataFrame] = None
         
     def load(self) -> pd.DataFrame:
         """
@@ -51,17 +46,13 @@ class DataLoader(LoggerMixin):
             FileNotFoundError: If data file doesn't exist
             ValueError: If data is empty or corrupted
         """
-        with Timer("Data loading", self.logger):
+        with Timer("Data loading", logger):
             file_path = self.config['file_paths']['raw_data']
-            file_path = Path(file_path)
-            if not file_path.exists():
-                self.logger.error(f'File Not Found! Check filepath and try again!')
-                raise FileNotFoundError(f'File Not Found!')
             
-            self.logger.info(f"Loading raw data from: {file_path}")
+            logger.info(f"Loading raw data from: {file_path}")
             
             try:
-                df = read_csv(
+                self.df = read_csv(
                     filepath=file_path,
                     optimize_dtypes=True
                 )
@@ -69,16 +60,18 @@ class DataLoader(LoggerMixin):
                 if self.df.empty:
                     raise ValueError("Loaded data is empty")
                 
-                self.logger.info(f"Data loaded successfully: {len(self.df):,} rows × {len(self.df.columns)} columns")
-                self.logger.info(f"Columns: {self.df.columns.tolist()}")
-                self.logger.info(f"Memory usage: {self.df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-
-                mlflow.log_param('no_of_rows', len(self.df))
-                mlflow.log_param('no_of_features', len(self.df.columns))
+                logger.info(f"Data loaded successfully: {len(self.df):,} rows × {len(self.df.columns)} columns")
+                logger.info(f"Columns: {self.df.columns.tolist()}")
+                logger.info(f"Memory usage: {self.df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
                 
-                return df
+                return self.df
                 
             except Exception as e:
-                self.logger.error(f"Failed to load data: {e}", exc_info=True)
+                logger.error(f"Failed to load data: {e}", exc_info=True)
                 raise
     
+    def get_data(self) -> pd.DataFrame:
+        """Get loaded DataFrame."""
+        if self.df is None:
+            raise RuntimeError("Data not loaded. Call load() first.")
+        return self.df
