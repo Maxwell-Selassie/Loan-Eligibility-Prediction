@@ -185,7 +185,7 @@ class EDAPipeline(LoggerMixin):
             EDAExecutionError: If pipeline execution fails
         """
 
-        mlflow.set_tracking_uri(f'http://localhost:5000')
+
         mlflow.set_experiment(f'EDA_LOAN_ELIGIBILITY_PREDICTION')
 
 
